@@ -1,4 +1,4 @@
-open Avr
+open Avr;;
 
 (* Initialise SPI connection *)
 let begin_spi ~ss ~sck ~mosi =

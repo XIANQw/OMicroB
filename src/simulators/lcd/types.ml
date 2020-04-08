@@ -1,4 +1,3 @@
-
 type ddram = int array
 
 type cgram = bool array array array

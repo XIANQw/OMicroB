@@ -114,19 +114,19 @@ void gc_one_val(value* ptr, int update) {
       }
       else { /* tag < No_scan_tag : tous les autres */
         *heap_ptr = hd;
-	heap_ptr ++;
+	      heap_ptr ++;
         value new_val = Val_dynamic_block(heap_ptr);
-	/* int n = sz ; */
-	/* value* po = heap_ptr; */
-	/* value* pi = (Block_val(val)); */
-	/* while (n--){ */
-	/*   *po++ = *pi++; */
-	/* } */
-	memcpy(heap_ptr, Ram_block_val(val), sz * sizeof (value));
+        // int n = sz ;
+        // value* po = heap_ptr;
+        // value* pi = (Block_val(val));
+        // while (n--){
+        //   *po++ = *pi++;
+        // }
+	      memcpy(heap_ptr, Ram_block_val(val), sz * sizeof (value));
         Ram_field(val, 0) = new_val;
         heap_ptr += sz;
         Ram_hd_val(val) = Set_black_hd(hd); /* bloc  copié, mise à jour de l'entête */
-	*ptr = new_val ; /* on le copie systematiquement (à voir pour les glob)*/
+	      *ptr = new_val ; /* on le copie systematiquement (à voir pour les glob)*/
       }
     }
   }

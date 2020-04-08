@@ -334,13 +334,13 @@ void set_bit(uint8_t reg, uint8_t bit){
       /* uint8_t ddr_val = regs[ddr]; */
       /* Forced to remove this as with INPUT_PULLUP, the PORT is also set at the beginning : */
       /* if(!(ddr_val & mask)){ */
-	/* char port_c = 'B' + reg - LOWER_PORT; */
-	/* fprintf(stderr, "Warning: the avr sets PORT%c.R%c%d when DDR%c=0x%02X\n", */
-		/* port_c, port_c, bit, port_c, ddr_val); */
+        /* char port_c = 'B' + reg - LOWER_PORT; */
+        /* fprintf(stderr, "Warning: the avr sets PORT%c.R%c%d when DDR%c=0x%02X\n", */
+        /* port_c, port_c, bit, port_c, ddr_val); */
       /* } */
       /* else { */
-	regs[reg] = new_val;
-	send_write_port(reg,new_val);
+          regs[reg] = new_val;
+          send_write_port(reg,new_val);
       /* } */
     }
   }

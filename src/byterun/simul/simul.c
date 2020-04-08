@@ -64,19 +64,24 @@ int is_stop(char *instr, int size){
 }
 
 void instr_loop(int input){
+  printf("instr_loop\n");
   int i = 0, n;
   char buf[100];
-  while((n = read(input, buf + i, sizeof(buf) - i - 1))){
+  
+  while((n = read(input, buf + i, sizeof(buf) - i - 1))){// lire le fichier de bytecode
     int occ = i + n;
-    while(i < occ && buf[i] != '\n') i ++;
-    if(i == sizeof(buf) - 1){
+    
+    while(i < occ && buf[i] != '\n') i ++; // lire chaque ligne de fichier 
+
+    if(i == sizeof(buf) - 1){ // Si la taille d'instruction > sizeof(buf), 
       buf[i] = '\0';
-      fprintf(stderr, "Invalid instruction: %s\n", buf);
+      fprintf(stderr, "Invalid instruction: %s\n", buf); // alor cette instruction est incorrecte
       i = 0;
-    }else if(i != occ){
+    }else if(i != occ){ // On a lu une instruction
       int size;
       buf[i] = '\0';
       size = strlen(buf);
+      printf("instr_loop, code=%s\n", buf);
       if(is_stop(buf, size)) return;
       exec_instr(buf, size);
       i ++;
@@ -86,10 +91,11 @@ void instr_loop(int input){
         if(i != occ){
           buf[i] = '\0';
           size = strlen(buf + j);
+          printf("code : %s\n", buf);
           if(is_stop(buf + j, size)) return;
           if(size != 0) exec_instr(buf + j, size);
           i ++;
-        }else{
+        }else{ // la dernier ligne de buffer
           i = 0;
           while(j < occ) buf[i ++] = buf[j ++];
           break;
@@ -100,6 +106,7 @@ void instr_loop(int input){
 }
 
 void run_cmnd(const char *cmnd){
+  printf("run_cmnd : %s", cmnd);
   pid_t pid;
   int pipe2[2];
   if(pipe(pipe2) == -1)
@@ -153,6 +160,7 @@ const char **global_argv = global_argv_tbl;
 #endif
 
 void init_simulator(void){
+  printf("Init simulator\n");
   int i, j;
   int argc;
   const char **argv;
@@ -218,7 +226,7 @@ void init_simulator(void){
         fprintf(stderr, "Program terminated, press enter to exit...\n");
         fgetc(stdin);
       } else {
-        fprintf(stderr, "Program terminated.\n");
+        fprintf(stderr, "error: Program terminated.\n");
       }
       destroy();
       exit(0);

@@ -1,5 +1,5 @@
 /* Entry point including the whole runtime */
-#include "arch-specific.c"
+#include "../simul/arch-specific.h"
 #include "array.c"
 #include "compare.c"
 #include "fail.c"

@@ -55,7 +55,7 @@ let sync_display =
 let init_graphics display =
   let config = Printf.sprintf " %dx%d" (display.width*2) (display.height*2) in
   open_graph config;
-  set_window_title "LCD display";
+  set_window_title "LCD display-------test";
   display_mode false;
   sync_display ()
 

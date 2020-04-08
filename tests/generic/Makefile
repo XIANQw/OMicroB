@@ -6,7 +6,7 @@ TARGETS := test.byte test.c test.elf
 all: $(TARGETS)
 
 $(TARGETS): $(SOURCES)
-	$(BIN)/omicrob -v $^ -mlopt -verbose -stack-size 200 -heap-size 200 -o test.elf
+	$(BIN)/omicrob -device=arduboy -v $^ -mlopt -verbose -stack-size 200 -heap-size 200 -trace 2
 
 clean:
 	@rm -f *.cmo *.cmi

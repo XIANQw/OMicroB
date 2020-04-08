@@ -1,13 +1,12 @@
 include ../../etc/Makefile.conf
 
-SOURCES := light.ml
+SOURCES := light.ml light_noalloc.ml light_ocalustre.ml
 TARGETS := light.byte light.c light.elf light.avr light.hex
-ATTY := /dev/ttyACM0
 
 all: $(TARGETS)
 
 $(TARGETS): $(SOURCES)
-	$(BIN)/omicrob -v $^ -gc MAC -arch 16 -no-flash-heap -stack-size 300 -heap-size 2000 -avrcxxopt -DF_CPU=16000000L
+	$(BIN)/omicrob -device=arduboy -v $^ -gc MAC -arch 16 -no-flash-heap -stack-size 300 -heap-size 2000 -trace 0 -o light.byte
 	# $(BIN)/omicrob -v $^ -gc SC -arch 16 -no-flash-heap -no-flash-globals -stack-size 300 -heap-size 800
 
 flash: light.hex

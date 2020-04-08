@@ -6,7 +6,7 @@ TARGETS := test.byte test.c test.elf test.avr test.hex
 all: $(TARGETS)
 
 $(TARGETS): $(SOURCES)
-	$(BIN)/omicrob -arch 16 -v $^ -mlopt -verbose
+	$(BIN)/omicrob -device=arduboy -v $^ -mlopt -verbose -stack-size 200 -heap-size 200 -trace 2
 
 flash: test.hex
 	$(BIN)/omicrob -flash -sudo $<

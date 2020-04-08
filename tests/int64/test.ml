@@ -9,6 +9,7 @@ let () = trace (Int64.to_string 123456789L)
 let () = trace (Int64.to_string 1234567890L)
 let () = trace (Int64.to_string 1234567890123456789L)
 
+let () = trace (string_of_int (compare [ 1L ] [ 1L ]))
 let () = trace (string_of_int (compare [ 1L ] [ 2L ]))
 let () = trace (string_of_int (compare [ -1L ] [ 2L ]))
 let () = trace (string_of_int (compare [ 1L ] [ -2L ]))

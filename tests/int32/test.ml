@@ -6,6 +6,8 @@ let () = trace (Int32.to_string 877l)
 let () = trace (Int32.to_string 123456789l)
 let () = trace (Int32.to_string 1234567890l)
 
+
+let () = trace (string_of_int (compare [ 1L ] [ 1L ]))
 let () = trace (string_of_int (compare [ 1L ] [ 2L ]))
 let () = trace (string_of_int (compare [ -1L ] [ 2L ]))
 let () = trace (string_of_int (compare [ 1L ] [ -2L ]))

@@ -49,10 +49,10 @@ void *alloc_shm(size_t size){
   }
 }
 
-void P(int sem){
+void P(int sem){ 
   struct sembuf sops;
   sops.sem_num = 0;
-  sops.sem_op = -1;
+  sops.sem_op = -1; // Si sem_op < 0, alors l'action de sem est P (wait)
   sops.sem_flg = 0;
   if(semop(sem, &sops, 1) == -1){
     fprintf(stderr, "Error: semop()\n");
@@ -63,7 +63,7 @@ void P(int sem){
 void V(int sem){
   struct sembuf sops;
   sops.sem_num = 0;
-  sops.sem_op = 1;
+  sops.sem_op = 1; // Si sem_op > 0, alors l'action de sem est V (signal)
   sops.sem_flg = 0;
   if(semop(sem, &sops, 1) == -1){
     fprintf(stderr, "Error: semop()\n");

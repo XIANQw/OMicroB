@@ -45,7 +45,12 @@ let port_of_string s =
 let char_of_port port =
   match port with
   | PORTA -> 'A'
-  | PORTB -> 'B' | PORTC -> 'C' | PORTD -> 'D' | PORTE -> 'E' | PORTF -> 'F' | SPDR -> 'G'
+  | PORTB -> 'B' 
+  | PORTC -> 'C' 
+  | PORTD -> 'D' 
+  | PORTE -> 'E' 
+  | PORTF -> 'F' 
+  | SPDR -> 'G'
   | PORTG -> 'G'
   | PORTH -> 'H'
   | PORTI -> 'I'
@@ -56,8 +61,11 @@ let char_of_port port =
 
 let port_of_char c =
   match c with
-    | 'B' | 'b' -> PORTB | 'C' | 'c' -> PORTC
-    | 'D' | 'd' -> PORTD | 'E' | 'e' -> PORTE | 'F' | 'f' -> PORTF
+    | 'B' | 'b' -> PORTB
+    | 'C' | 'c' -> PORTC
+    | 'D' | 'd' -> PORTD 
+    | 'E' | 'e' -> PORTE 
+    | 'F' | 'f' -> PORTF
     | 'G' | 'g' -> SPDR
     | 'H' | 'h' -> PORTH
     | 'I' | 'i' -> PORTI

@@ -43,7 +43,11 @@ static inline value read_flash_global_data_2B(uint16_t glob_ind) {
 }
 
 static inline char read_byte(void) {
+  // printf("read_byte\n");
   char c = do_read_byte(ocaml_bytecode, pc);
+  #if DEBUG == 2
+  printf("readbyte %ld\n", c);
+  #endif
   pc ++;
   return c;
 }
