@@ -349,7 +349,6 @@ void clear_bit(uint8_t reg, uint8_t bit){
     if(reg >= LOWER_PORT && reg <= HIGHER_PORT){
       if(old_val != new_val){
         uint8_t ddr = reg - LOWER_PORT + LOWER_DDR;
-        printf("ddr=%d %s\n", ddr, desc_of_reg(regs[ddr]));
         uint8_t ddr_val = value_of_reg(regs[ddr]); 
         if(!(ddr_val & mask)){
           char port_c = 'A' + reg - LOWER_PORT;
