@@ -18,8 +18,11 @@ void exec_instr(char *instr, int size);
 bool read_bit(uint8_t reg, uint8_t bit);
 void set_bit(uint8_t reg, uint8_t bit);
 void clear_bit(uint8_t reg, uint8_t bit);
-void write_register(uint8_t reg, uint8_t val);
-uint8_t read_register(uint8_t reg);
+void write_register(uint8_t reg, bool * val);
+bool * read_register(uint8_t reg);
+
+uint8_t value_of_reg(bool * val);
+bool * reg_of_value(uint8_t val);
 
 /******************************************************************************/
 

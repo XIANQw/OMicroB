@@ -4,9 +4,11 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
+#include <stdlib.h>
+
 #include "shared.h"
 #include "simul.h"
-#include <string.h>
 
 /******************************************************************************/
 /******************************************************************************/
@@ -67,7 +69,7 @@
 
 #define REG_BITS 8
 
-static bool* regs[REG_BITS];
+static bool* regs[NB_REG];
 static unsigned int *analogs;
 static int *sync_counter;
 static int sem_regs;
@@ -85,7 +87,7 @@ static int is_slow;
 // reg = {0,0,0,0,0,0,0,0}
 void init_regs(int n, int slow){
   int i;
-  for (i=0; i<REG_BITS; i++){
+  for (i=0; i<NB_REG; i++){
     regs[i] = (bool*) malloc(sizeof(bool) * REG_BITS);
     memset(regs[i], 0, REG_BITS);
   }
@@ -106,8 +108,8 @@ void destroy_regs(void){
   destroy_sem(sem_done);
   for(int i=0; i<NB_REG; i++){
     free(regs[i]);
+    regs[i] = NULL;
   }
-  free(regs);
 }
 
 void dump_regs(void){
@@ -163,8 +165,38 @@ static void may_sleep(){
 
 /******************************/
 
+//{1,0,0,0,0,0,0,0} = 1 << 7;
+uint8_t value_of_reg(bool * val){
+  uint8_t value = 0;
+  for(int i=0; i<REG_BITS; i++){
+    value += val[i] << ((REG_BITS-1)-i);
+  }
+  return value;
+}
+
+static char * desc_of_reg(bool * val){
+  char * val_str = (char *)malloc(sizeof(bool) * (REG_BITS+1));
+  for(int i=0; i<REG_BITS; i++){
+    val_str[i] = '0' + val[i];
+  }
+  val_str[REG_BITS]='\0';
+  return val_str;
+}
+
+bool * reg_of_value(uint8_t val){
+  bool * res = (bool *)malloc(sizeof(bool) * REG_BITS);
+  for(int i=REG_BITS - 1; i>=0; i--){
+    res[i] = val & 0b00000001;
+    val = val >> 1;
+  }
+  return res;
+}
+
+/******************************/
+
 static void send_write(char cmnd, int port, bool * val){
   uint8_t value = value_of_reg(val);
+  printf("send_write(%c, %c, %d)\n", cmnd, port+'A', value);
   char buf[5];
   buf[0] = cmnd;
   buf[1] = port + 'A';
@@ -175,7 +207,7 @@ static void send_write(char cmnd, int port, bool * val){
 }
 
 static void send_write_port(int port, bool * val){
-  /* printf("sending write %d = %d \n", port, val); */
+  // printf("sending write %d = %d \n", port, val);
   send_write('W', port, val);
 }
 
@@ -226,27 +258,10 @@ static void synchronize(){
 
 // Port need synchro
 static int is_reg_need_synchro(uint8_t reg){
-  return
-    (reg >= LOWER_PORT && reg <= HIGHER_PORT);
+  return (reg >= LOWER_PORT && reg <= HIGHER_PORT);
 }
 
-//{1,0,0,0,0,0,0,0} = 1 << 7;
-static uint8_t value_of_reg(bool * val){
-  uint8_t value = 0;
-  for(int i=0; i<REG_BITS; i++){
-    value += val[i] << ((REG_BITS-1)-i);
-  }
-  return value;
-}
 
-static char * desc_of_reg(bool * val){
-  char val_str[REG_BITS+1];
-  for(int i=0; i<REG_BITS; i++){
-    val_str[i] = '0' + val[i];
-  }
-  val_str[REG_BITS] = '\0';
-  return val_str;
-}
 
 static void write_register_gen(int reg, bool * new_val){
   bool * old_val = regs[reg];
@@ -281,7 +296,7 @@ static void write_register_gen(int reg, bool * new_val){
 }
 
 void write_register(uint8_t reg, bool * new_val){
-  printf("write_register(%d, %s)\n", reg, desc_of_reg(new_val));
+  printf("Write %s to reg%d\n", desc_of_reg(new_val), reg);
   init_simulator();
   P(sem_regs);
   write_register_gen(reg, new_val);
@@ -290,18 +305,19 @@ void write_register(uint8_t reg, bool * new_val){
 
 bool * read_register(uint8_t reg){
   printf("read_register(%d)\n", reg);
-  uint8_t val;
+  bool * val;
   init_simulator();
   if (is_reg_need_synchro(reg)) synchronize();
   P(sem_regs);
   val = regs[reg];
+  printf("regs[%d]=%s\n", reg, desc_of_reg(val));
   V(sem_regs);
   may_sleep();
   return val;
 }
 
 bool read_bit(uint8_t reg, uint8_t bit){
-  /* printf("avr_read_bit(%d, %d)\n", (int) reg, (int) bit); */
+  printf("read_bit(%d, %d), regs[%d]=%s\n", reg, bit, reg, desc_of_reg(regs[reg]));
   /* Dirty hack  */
   if (reg == SPSR){
       return 1;
@@ -318,37 +334,38 @@ bool read_bit(uint8_t reg, uint8_t bit){
 }
 
 void clear_bit(uint8_t reg, uint8_t bit){
-  /* printf("avr_clear_bit(%d, %d)\n", (int) reg, (int) bit);  */
+  printf("clear_bit(%d, %d)\n", (int) reg, (int) bit);
   init_simulator();
   P(sem_regs);
   {
-    bool * val = regs[reg];
-    uint8_t old_val = value_of_reg(val);
-    val[(REG_BITS-1)-bit] = 0;
-    uint8_t new_val = value_of_reg(val);
+    printf("old_reg=%s\n", desc_of_reg(regs[reg]));
+    uint8_t mask = 1 << bit;
+    uint8_t old_val = value_of_reg(regs[reg]);
+    regs[reg][(REG_BITS-1)-bit] = 0;
+    uint8_t new_val = value_of_reg(regs[reg]);
+    printf("new_reg=%s\n", desc_of_reg(regs[reg]));
     // if bit = 3  mask = {0,0,0,0,1,0,0,0}
     //            ~mask = {1,1,1,1,0,1,1,1}
     if(reg >= LOWER_PORT && reg <= HIGHER_PORT){
       if(old_val != new_val){
-        int ddr = reg - LOWER_PORT + LOWER_DDR;
-        bool * ddr_val = regs[ddr];
-        if(!(value_of_reg(ddr_val))){
+        uint8_t ddr = reg - LOWER_PORT + LOWER_DDR;
+        printf("ddr=%d %s\n", ddr, desc_of_reg(regs[ddr]));
+        uint8_t ddr_val = value_of_reg(regs[ddr]); 
+        if(!(ddr_val & mask)){
           char port_c = 'A' + reg - LOWER_PORT;
           fprintf(stderr,
                   "Warning: the avr clears PORT%c.R%c%d when DDR%c=0x%02X\n",
                   port_c, port_c, bit, port_c, ddr_val);
         }else{
-          regs[reg] = val;
-          send_write_port(reg, val);
+          send_write_port(reg, regs[reg]);
         }
       }
     } else if(reg >= LOWER_DDR && reg <= HIGHER_DDR){
       if(old_val != new_val){
-        regs[reg] = val;
-        send_write_ddr(reg, val);
+        send_write_ddr(reg, regs[reg]);
       }
     }else{
-      regs[reg] = val;
+      // regs[reg] = regs[reg];
     }
   }
   V(sem_regs);
@@ -391,11 +408,13 @@ void clear_bit(uint8_t reg, uint8_t bit){
 // }
 
 void set_bit(uint8_t reg, uint8_t bit){
-  printf("Set value %d to pin %d\n", bit, reg);
+  printf("Set bit %d to pin %d\n", bit, reg);
   init_simulator();
   P(sem_regs);
   uint8_t old_val = value_of_reg(regs[reg]);
+  printf("old_reg=%s\n", desc_of_reg(regs[reg]));
   regs[reg][(REG_BITS-1)-bit] = 1;
+  printf("new_reg=%s\n", desc_of_reg(regs[reg]));
   uint8_t new_val = value_of_reg(regs[reg]);
   if(reg >= LOWER_PORT && reg <= HIGHER_PORT){
     if (old_val != new_val){
@@ -460,22 +479,23 @@ int pic_tris_of_port(int port_or_bit){
 
 /******************************/
 
-static void out_write_port(int port, bool * new_val){
+static void out_write_port(int port, uint8_t new_val){
   P(sem_regs);
   {
+    bool * new_reg = reg_of_value(new_val);
+    printf("out_write_port(%d, %s)\n", port, desc_of_reg(new_reg));
     int ddr = port - LOWER_PORT + LOWER_DDR;
     uint8_t ddr_val = value_of_reg(regs[ddr]);
     uint8_t old_val = value_of_reg(regs[port]);
-    uint8_t new_val_val = value_of_reg(new_val);
-    if((new_val_val & ~ddr_val) != 0xFF){
+    if((new_val & ~ddr_val) != 0xFF){
       char port_c = 'A' + port - LOWER_PORT;
       fprintf(stderr,
               "Warning: an outside component writes PORT%c=0x%02X when TRIS%c=0x%02X\n",
-              port_c, new_val_val, port_c, ddr_val);
+              port_c, new_val, port_c, ddr_val);
     }
-    if(new_val_val != old_val){
-      regs[port] = new_val;
-      send_write_port(port, new_val);
+    if(new_val != old_val){
+      regs[port] = new_reg;
+      send_write_port(port, regs[port]);
     }
   }
   V(sem_regs);
@@ -485,11 +505,14 @@ static void out_write_port(int port, bool * new_val){
 static void out_clear_port_bit(int port, int bit){
   P(sem_regs);
   {
+    printf("out_clear_port_bit(port=%d, bit=%d)", port, bit);
     int mask = 1 << bit;
     int ddr = port - LOWER_PORT + LOWER_DDR;
     uint8_t ddr_val = value_of_reg(regs[ddr]);
     uint8_t old_val = value_of_reg(regs[port]);
+    printf("old_reg=%s\n", desc_of_reg(regs[port]));
     regs[port][(REG_BITS-1)-bit] = 0;
+    printf("new_reg=%s\n", desc_of_reg(regs[port]));
     uint8_t new_val = value_of_reg(regs[port]);
     if(ddr_val & mask){
       char port_c = 'A' + port - LOWER_PORT;
@@ -512,7 +535,9 @@ static void out_set_port_bit(int port, int bit){
     int ddr = port - LOWER_PORT + LOWER_DDR;
     uint8_t ddr_val = value_of_reg(regs[ddr]);
     uint8_t old_val = value_of_reg(regs[port]);
+    printf("old_reg=%s\n", desc_of_reg(regs[port]));
     regs[port][(REG_BITS-1)-bit] = 1;
+    printf("new_reg=%s\n", desc_of_reg(regs[port]));
     uint8_t new_val = value_of_reg(regs[port]);
     if(ddr_val & mask){
       char port_c = 'A' + port - LOWER_PORT;
