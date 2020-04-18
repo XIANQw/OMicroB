@@ -102,7 +102,7 @@ void init_regs(int n, int slow){
   // for(i = 0 ; i < NB_REG ; i ++) regs[i] = 0x00;
 }
 
-void destroy_regs(void){
+void destroy_regs(void) {
   destroy_sem(sem_regs);
   destroy_sem(sem_sync);
   destroy_sem(sem_done);
