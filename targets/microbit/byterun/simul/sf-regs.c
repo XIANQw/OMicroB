@@ -1,6 +1,66 @@
 /******************************************************************************/
 /******************************************************************************/
 /******************************************************************************/
+#include <stdbool.h>
+#include <sys/types.h>
+#include<sys/wait.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <limits.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h> 
+ 
+#define SERVER_W "serverWrite"
+#define SERVER_R "serverRead"
+
+#define PIN0 0
+#define PIN1 1
+#define PIN2 2
+#define PIN3 3
+#define PIN4 4
+#define PIN5 5
+#define PIN6 6
+#define PIN7 7
+#define PIN8 8
+#define PIN9 9
+#define PIN10 10
+#define PIN11 11
+#define PIN12 12
+#define PIN13 13
+#define PIN14 14
+#define PIN15 15
+#define PIN16 16
+#define PIN19 19
+#define PIN20 20
+
+
+
+#define NB_REG 255
+#define REG_SIZE 8
+
+bool regs[NB_REG][REG_SIZE];
+bool mode[19];
+
+
+void send_msg(char * str){
+    //pipe_write exist or not
+    if(access(SERVER_W,0) < 0){
+        printf("pipe_write%s doesn't exist\n",SERVER_W);
+        return ;
+    }
+    //open pipe_write
+    int fd_w = open(SERVER_W,O_RDWR);
+    if(fd_w < 0){
+        perror("open pipe_write fail");
+    }
+    printf("open pipe_write\n");
+    if ( write(fd_w, str, strlen(str)+1) == -1){
+      perror("server send msg fail");
+    }
+}
+
 
 void microbit_print_string(char *str) {
   printf("%s\n", str);
@@ -16,12 +76,17 @@ void microbit_write_pixel(int x, int y, int l) {
 }
 
 void microbit_print_image(char *str) {
+  char image[35];
   for(int y = 0; y < 5; y++) {
     for(int x = 0; x < 5; x++) {
-      printf("%d ", str[y*5+x]);
+      image[6*y+x] = str[y*5+x]; 
+      // printf("%d ", str[y*5+x]);
     }
-    printf("\n");
+    image[6*(y+1)-1] = '\n';
+    // printf("\n");
   }
+  image[29] = '\0';
+  send_msg(image);
 }
 
 void microbit_clear_screen() {}
