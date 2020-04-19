@@ -1,6 +1,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+
+#include <signal.h>
+#include <sys/types.h>
+
 #include <unistd.h>
 #include <limits.h>
 #include <fcntl.h>
@@ -10,15 +14,19 @@
  
 #define SERVER_W "serverWrite"
 #define SERVER_R "serverRead"
- 
+#define SIG_A __SIGRTMIN+10
+#define SIG_NO_A __SIGRTMIN+11
+#define SIG_B __SIGRTMIN+12
+#define SIG_NO_B __SIGRTMIN+13
+
+
 void main(){
-    //客户端的读是服务端的写，服务端的写是客户端的读
+    //SERVER_W is client's lecteur，SERVER_R is client's write
     printf("Program start\n");
     int fd_w,fd_r;
     int pid_w,pid_r;
     char msg_w[BUFSIZ],msg_r[BUFSIZ];
-    pid_t pid;
- 
+    pid_t pid, server_pid=0;
     // pipe_read
     if(access(SERVER_W,0) < 0){
         pid_r = mkfifo(SERVER_W,0700);
@@ -28,7 +36,6 @@ void main(){
         }
          printf("pipe_read%s create\n",SERVER_W);
     }
-
     fd_r = open(SERVER_W,O_RDWR);
     if(fd_r < 0){
         perror("open pipe_read fail");
@@ -44,35 +51,49 @@ void main(){
         }
         printf("pipe_write%s create\n",SERVER_R);
     }
-
     fd_w = open(SERVER_R,O_RDWR);
     if(fd_w < 0){
         perror("open pipe_write fail");
     }
     printf("open pipe_write\n");
- 
+    
+    // get pid of server
+    while(1){
+        if( read(fd_r,msg_r,BUFSIZ) == -1 ){
+            perror("client recieve msg fail");
+        }else{
+            if ((strlen(msg_r) > 3) && (msg_r[0]=='p') && (msg_r[1]='i') && (msg_r[2]=='d')){
+                char pidch[10];
+                strcpy(pidch, msg_r+3);
+                server_pid = atoi(pidch);
+                printf("server_pid=%d\n", server_pid);
+                break;
+            }
+        }
+    }
     printf("client start communication\n");
- 
+
     pid = fork();
     if(pid < 0){
         perror("write_processus create fail\n");
     }else if(pid == 0){
         printf("write_processus create\n");
         printf("\n---------------------notify: 1(pressed button A), 2(clear button A), 3(press button B), 4(clear button B)\n");
+        int ins=9;
         while(1){
-            scanf("%s",msg_w);
-            if (((strlen(msg_w) > 1) || (msg_w[0] > '4') || (msg_w[0] < '1')) && (strcmp("EOF",msg_w) != 0)) {
-                printf("1(pressed button A), 2(clear button A), 3(press button B), 4(clear button B)\n");
-                continue;
-            }
-            if ( write(fd_w,msg_w,strlen(msg_w)+1) == -1){
-                perror("client send msg fail");
-            }else{
-                printf("****************client send: %s\n",msg_w);
-                if (strcmp("EOF",msg_w) == 0){       
-                    break;
-                }
-            }
+            scanf("%d", &ins);
+            switch (ins) {
+            case 1:
+                kill(server_pid, SIG_A); break;
+            case 2:
+                kill(server_pid, SIG_NO_A); break;
+            case 3: 
+                kill(server_pid, SIG_B); break;
+            case 4:
+                kill(server_pid, SIG_NO_B); break;
+            default:
+                printf("1(pressed button A), 2(clear button A), 3(press button B), 4(clear button B)\n"); break;
+            }             
         }//while
         printf("---------------------notify: client terminated write processus\n");
         _exit(0);

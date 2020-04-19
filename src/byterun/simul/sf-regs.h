@@ -74,6 +74,48 @@ char avr_serial_read();
 #ifndef PRIMS_H_MICROBIT
 #define PRIMS_H_MICROBIT
 
+
+#include <stdbool.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <limits.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h> 
+ 
+#define PIN0 0
+#define PIN1 1
+#define PIN2 2
+#define PIN3 3
+#define PIN4 4
+#define PIN5 5
+#define PIN6 6
+#define PIN7 7
+#define PIN8 8
+#define PIN9 9
+#define PIN10 10
+#define PIN11 11
+#define PIN12 12
+#define PIN13 13
+#define PIN14 14
+#define PIN15 15
+#define PIN16 16
+#define PIN19 19
+#define PIN20 20
+
+#define SERVER_W "/home/xian/Projets/M1-S2/PSTL/OMicroB/src/client/serverWrite"
+#define SERVER_R "/home/xian/Projets/M1-S2/PSTL/OMicroB/src/client/serverRead"
+
+#define BUF_SIZE 50
+char buf[BUF_SIZE];
+bool button[2];
+char image[30];
+
+void lisener_init();
+void send_msg(char * str);
 void microbit_pin_mode(int p, int m);
 void microbit_digital_write(int p, int l);
 int microbit_digital_read(int p);

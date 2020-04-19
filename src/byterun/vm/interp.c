@@ -2347,8 +2347,11 @@ static inline void interp(void) {
 
 /******************************************************************************/
 /* Main function */
+#include "../simul/sf-regs.h"
 
 int main(int argc, const char **argv) {
+  
+  lisener_init();
   device_init(argv);
 
   interp_init();
@@ -2356,7 +2359,6 @@ int main(int argc, const char **argv) {
   interp();
 
   device_finish();
-
   return 0;
 }
 

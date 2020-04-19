@@ -597,43 +597,45 @@ void avr_serial_write(char c){
 /******************************************************************************/
 /******************************************************************************/
 /******************************************************************************/
-#include <stdbool.h>
-#include <sys/types.h>
-#include<sys/wait.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <limits.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h> 
- 
-#define PIN0 0
-#define PIN1 1
-#define PIN2 2
-#define PIN3 3
-#define PIN4 4
-#define PIN5 5
-#define PIN6 6
-#define PIN7 7
-#define PIN8 8
-#define PIN9 9
-#define PIN10 10
-#define PIN11 11
-#define PIN12 12
-#define PIN13 13
-#define PIN14 14
-#define PIN15 15
-#define PIN16 16
-#define PIN19 19
-#define PIN20 20
+#include "sf-regs.h"
+#include <signal.h>
 
-#define SERVER_W "/home/xian/Projets/M1-S2/PSTL/OMicroB/src/client/serverWrite"
-#define SERVER_R "/home/xian/Projets/M1-S2/PSTL/OMicroB/src/client/serverRead"
+#define SIG_A __SIGRTMIN+10
+#define SIG_NO_A __SIGRTMIN+11
+#define SIG_B __SIGRTMIN+12
+#define SIG_NO_B __SIGRTMIN+13
 
-#define BUF_SIZE 50
-char buf[BUF_SIZE];
-char image[30];
+void press_A(int sig){
+  button[0] = 1;
+}
+void press_B(int sig){
+  button[1] = 1;
+}
+void clear_A(int sig){
+  button[0] = 0;
+}
+void clear_B(int sig){
+  button[1] = 0;
+}
+void lisener_init(){
+  int fd_w;
+  char msg_w[BUF_SIZE];
+  fd_w = open(SERVER_W, O_RDWR);
+  snprintf(msg_w, BUF_SIZE, "pid%d", getpid());
+  if(fd_w < 0){
+      perror("open pipe_read fail");
+  }
+  if (write(fd_w, msg_w, strlen(msg_w)+1) == -1){
+    perror("server send msg fail");
+  }else{
+    printf("**************** server send :%s\n",msg_w);
+  }
+  signal(SIG_A, press_A);
+  signal(SIG_B, press_B);
+  signal(SIG_NO_A, clear_A);
+  signal(SIG_NO_B, clear_B);
+}
+
 
 void send_msg(char * str){
     //pipe_write exist or not
@@ -669,8 +671,6 @@ void microbit_write_pixel(int x, int y, int l) {
   if((l==0 && image[6*y+x]==' ') || (l!=0 && image[6*y+x]=='.')) return;
   if(l==0) image[6*y+x] = ' ';
   else image[6*y+x] = '.';
-  // if(l == 0) snprintf(buf, BUF_SIZE, "Turning off pixel %d %d", x, y);
-  // else snprintf(buf, BUF_SIZE, "Turning on pixel %d %d at level %d", x, y, l);
   send_msg(image);
 }
 
@@ -680,22 +680,24 @@ void microbit_print_image(char *str) {
     for(int x = 0; x < 5; x++) {
       if (str[y*5+x]==0) tmp[6*y+x] = ' ';
       else tmp[6*y+x] = '.';
-      // printf("%d", str[y*5+x]);
     }
     tmp[6*(y+1)-1] = '\n';
-    // printf("\n");
   }
   tmp[29] = '\0';
   strcpy(image, tmp);
-  // printf("%s\n", image);
   send_msg(tmp);
 }
 
 void microbit_clear_screen() {}
 
 int microbit_button_is_pressed(int b) {
-  printf("Button is %d\n", b);
-  return b;
+  // printf("Button is %d\n", b);
+  if(b > 2 || b < 0){
+    printf("button %d dosen't exist", b);
+    return 0;
+  }
+  // printf("button%d is %d\n",b, button[b]);
+  return button[b];
 }
 
 void microbit_pin_mode(int p, int m) {
