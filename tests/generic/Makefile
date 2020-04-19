@@ -10,6 +10,6 @@ $(TARGETS): $(SOURCES)
 
 clean:
 	@rm -f *.cmo *.cmi
-	@rm -f $(TARGETS)
+	@rm -f *.byte *.c *.elf
 
 .PHONY: all flash clean
