@@ -84,7 +84,7 @@ void main(){
                 perror("client recieve msg fail");
             }else{
                 if( strlen(msg_r) > 0 ){
-                    printf("**************** client read:\n%s\n",msg_r);
+                    printf("**************** client read: len=%ld\n%s\n", strlen(msg_r), msg_r);
                     if (strcmp("EOF",msg_r) == 0){
                         printf("server quit, stop read\n");
                         break;

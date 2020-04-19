@@ -666,9 +666,9 @@ void microbit_print_int(int i) {
 }
 
 void microbit_write_pixel(int x, int y, int l) {
-  if((l==0 && image[6*y+x]=='0') || (l!=0 && image[6*y+x]=='1')) return;
-  if(l==0) image[6*y+x] = '0';
-  else image[6*y+x] = '1';
+  if((l==0 && image[6*y+x]==' ') || (l!=0 && image[6*y+x]=='.')) return;
+  if(l==0) image[6*y+x] = ' ';
+  else image[6*y+x] = '.';
   // if(l == 0) snprintf(buf, BUF_SIZE, "Turning off pixel %d %d", x, y);
   // else snprintf(buf, BUF_SIZE, "Turning on pixel %d %d at level %d", x, y, l);
   send_msg(image);
@@ -678,7 +678,8 @@ void microbit_print_image(char *str) {
   char tmp[30];
   for(int y = 0; y < 5; y++) {
     for(int x = 0; x < 5; x++) {
-      tmp[6*y+x] = '0' + (str[y*5+x]*(-1)); 
+      if (str[y*5+x]==0) tmp[6*y+x] = ' ';
+      else tmp[6*y+x] = '.';
       // printf("%d", str[y*5+x]);
     }
     tmp[6*(y+1)-1] = '\n';
