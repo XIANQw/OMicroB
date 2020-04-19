@@ -1,6 +1,6 @@
 #include <xc.h>
 #include <p32xxxx.h>
-#include <plib.h>
+//#include <plib.h>
 
 #define SYS_FREQ                80000000L
 
@@ -123,7 +123,7 @@ void write_register(uint8_t reg, uint8_t val) {
   *(get_reg_addr(reg)) = val;
 }
 
-uint32_t read_register(uint8_t reg) {
+uint8_t read_register(uint8_t reg) {
   return *(get_reg_addr(reg));
 }
 
@@ -198,20 +198,20 @@ uint32_t read_register_uart(uint8_t reg) {
 
 
 
-uint32_t millis() {
-  uint32_t time_ticks, time_ms;
+int millis() {
+  int time_ticks, time_ms;
 
   time_ticks = _CP0_GET_COUNT();
-  time_ms = (uint32_t)((time_ticks * 2.0) / (SYS_FREQ / 1000));
+  time_ms = (int)((time_ticks * 2.0) / (SYS_FREQ / 1000));
 
   return time_ms;
 }
 
 void delay(int ms) {
-  uint32_t begin;
+  int begin;
   
   begin = millis();
-  while ((millis() - begin) < (uint32_t) ms);
+  while ((millis() - begin) < ms);
 }
 
 
@@ -263,12 +263,12 @@ void delay(int ms) {
 
 
 void init_system() {
-  SYSTEMConfig(SYS_FREQ, SYS_CFG_WAIT_STATES | SYS_CFG_PB_BUS);
+  // SYSTEMConfig(SYS_FREQ, SYS_CFG_WAIT_STATES | SYS_CFG_PB_BUS);
 }
 
 void init_interrupts(uint8_t mode) {
-  INTConfigureSystem(mode);
-  INTEnableInterrupts();
+  // INTConfigureSystem(mode);
+  // INTEnableInterrupts();
 }
 
 
