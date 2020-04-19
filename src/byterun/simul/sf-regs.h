@@ -74,8 +74,6 @@ char avr_serial_read();
 #ifndef PRIMS_H_MICROBIT
 #define PRIMS_H_MICROBIT
 
-
-#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
