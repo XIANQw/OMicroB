@@ -633,7 +633,7 @@ void avr_serial_write(char c){
 
 #define BUF_SIZE 50
 char buf[BUF_SIZE];
-
+char image[30];
 
 void send_msg(char * str){
     //pipe_write exist or not
@@ -648,7 +648,6 @@ void send_msg(char * str){
         printf("open pipe_write fail %d\n", fd_w);
         exit(0);
     }
-    // printf("open pipe_write\n");
     printf("send: len=%ld fd_w=%d\n%s\n", strlen(str), fd_w, str);
     if ( write(fd_w, str, strlen(str)+1) == -1){
       perror("server send msg fail");
@@ -659,56 +658,54 @@ void send_msg(char * str){
 
 void microbit_print_string(char *str) {
   send_msg(str);
-  // printf("%s\n", str);
 }
 
 void microbit_print_int(int i) {
   snprintf(buf, 50, "%d", i);
   send_msg(buf);
-  // printf("%d\n", i);
 }
 
 void microbit_write_pixel(int x, int y, int l) {
-  if(l == 0) snprintf(buf, BUF_SIZE, "Turning off pixel %d %d", x, y);
-  else snprintf(buf, BUF_SIZE, "Turning on pixel %d %d at level %d", x, y, l);
-  send_msg(buf);
-  // if(l == 0) printf("Turning off pixel %d %d\n", x, y);
-  // else printf("Turning on pixel %d %d at level %d\n", x, y, l);
+  if((l==0 && image[6*y+x]=='0') || (l!=0 && image[6*y+x]=='1')) return;
+  if(l==0) image[6*y+x] = '0';
+  else image[6*y+x] = '1';
+  // if(l == 0) snprintf(buf, BUF_SIZE, "Turning off pixel %d %d", x, y);
+  // else snprintf(buf, BUF_SIZE, "Turning on pixel %d %d at level %d", x, y, l);
+  send_msg(image);
 }
 
 void microbit_print_image(char *str) {
-  char image[30];
+  char tmp[30];
   for(int y = 0; y < 5; y++) {
     for(int x = 0; x < 5; x++) {
-      image[6*y+x] = '0' + (str[y*5+x]*(-1)); 
+      tmp[6*y+x] = '0' + (str[y*5+x]*(-1)); 
       // printf("%d", str[y*5+x]);
     }
-    image[6*(y+1)-1] = '\n';
+    tmp[6*(y+1)-1] = '\n';
     // printf("\n");
   }
-  image[29] = '\0';
+  tmp[29] = '\0';
+  strcpy(image, tmp);
   // printf("%s\n", image);
-  send_msg(image);
+  send_msg(tmp);
 }
 
 void microbit_clear_screen() {}
 
 int microbit_button_is_pressed(int b) {
-  return 0;
+  printf("Button is %d\n", b);
+  return b;
 }
 
 void microbit_pin_mode(int p, int m) {
   if(m == 0) snprintf(buf, 50, "Setting PIN%d to INPUT", p);
   else snprintf(buf, 50, "Setting PIN%d to OUTPUT", p);
   send_msg(buf);
-  // if(m == 0) printf("Setting PIN%d to INPUT\n", p);
-  // else printf("Setting PIN%d to OUTPUT\n", p);
 }
 
 void microbit_digital_write(int p, int l) {
   snprintf(buf, 50, "Writing value %d to pin %d", l, p);
   send_msg(buf);
-  // printf("Writing value %d to pin %d\n", l, p);
 }
 
 void microbit_analog_write(int p, int l) {
@@ -735,7 +732,7 @@ int microbit_millis() {
 /******************************************************************************/
 
 void microbit_serial_write(char c) {
-  printf("%c", c);
+  printf("serial write %c\n", c);
 }
 
 char microbit_serial_read() {
