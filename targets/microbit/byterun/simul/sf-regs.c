@@ -12,9 +12,6 @@
 #include <stdio.h>
 #include <string.h> 
  
-#define SERVER_W "serverWrite"
-#define SERVER_R "serverRead"
-
 #define PIN0 0
 #define PIN1 1
 #define PIN2 2
@@ -35,57 +32,66 @@
 #define PIN19 19
 #define PIN20 20
 
+#define SERVER_W "/home/xian/Projets/M1-S2/PSTL/OMicroB/src/client/serverWrite"
+#define SERVER_R "/home/xian/Projets/M1-S2/PSTL/OMicroB/src/client/serverRead"
 
-
-#define NB_REG 255
-#define REG_SIZE 8
-
-bool regs[NB_REG][REG_SIZE];
-bool mode[19];
+#define BUF_SIZE 50
+char buf[BUF_SIZE];
 
 
 void send_msg(char * str){
     //pipe_write exist or not
     if(access(SERVER_W,0) < 0){
-        printf("pipe_write%s doesn't exist\n",SERVER_W);
+        printf("pipe_write %s doesn't exist\n",SERVER_W);
         return ;
     }
     //open pipe_write
-    int fd_w = open(SERVER_W,O_RDWR);
+    int fd_w = open(SERVER_W, O_RDWR);
+
     if(fd_w < 0){
-        perror("open pipe_write fail");
+        printf("open pipe_write fail %d\n", fd_w);
+        exit(0);
     }
-    printf("open pipe_write\n");
+    // printf("open pipe_write\n");
+    printf("send: len=%ld fd_w=%d\n%s\n", strlen(str), fd_w, str);
     if ( write(fd_w, str, strlen(str)+1) == -1){
       perror("server send msg fail");
     }
+    close(fd_w);
 }
 
 
 void microbit_print_string(char *str) {
-  printf("%s\n", str);
+  send_msg(str);
+  // printf("%s\n", str);
 }
 
 void microbit_print_int(int i) {
-  printf("%d\n", i);
+  snprintf(buf, 50, "%d", i);
+  send_msg(buf);
+  // printf("%d\n", i);
 }
 
 void microbit_write_pixel(int x, int y, int l) {
-  if(l == 0) printf("Turning off pixel %d %d\n", x, y);
-  else printf("Turning on pixel %d %d at level %d\n", x, y, l);
+  if(l == 0) snprintf(buf, BUF_SIZE, "Turning off pixel %d %d", x, y);
+  else snprintf(buf, BUF_SIZE, "Turning on pixel %d %d at level %d", x, y, l);
+  send_msg(buf);
+  // if(l == 0) printf("Turning off pixel %d %d\n", x, y);
+  // else printf("Turning on pixel %d %d at level %d\n", x, y, l);
 }
 
 void microbit_print_image(char *str) {
-  char image[35];
+  char image[30];
   for(int y = 0; y < 5; y++) {
     for(int x = 0; x < 5; x++) {
-      image[6*y+x] = str[y*5+x]; 
-      // printf("%d ", str[y*5+x]);
+      image[6*y+x] = '0' + (str[y*5+x]*(-1)); 
+      // printf("%d", str[y*5+x]);
     }
     image[6*(y+1)-1] = '\n';
     // printf("\n");
   }
   image[29] = '\0';
+  // printf("%s\n", image);
   send_msg(image);
 }
 
@@ -96,16 +102,21 @@ int microbit_button_is_pressed(int b) {
 }
 
 void microbit_pin_mode(int p, int m) {
-  if(m == 0) printf("Setting PIN%d to INPUT\n", p);
-  else printf("Setting PIN%d to OUTPUT\n", p);
+  if(m == 0) snprintf(buf, 50, "Setting PIN%d to INPUT", p);
+  else snprintf(buf, 50, "Setting PIN%d to OUTPUT", p);
+  send_msg(buf);
+  // if(m == 0) printf("Setting PIN%d to INPUT\n", p);
+  // else printf("Setting PIN%d to OUTPUT\n", p);
 }
 
 void microbit_digital_write(int p, int l) {
-  printf("Writing value %d to pin %d\n", l, p);
+  snprintf(buf, 50, "Writing value %d to pin %d", l, p);
+  send_msg(buf);
+  // printf("Writing value %d to pin %d\n", l, p);
 }
 
 void microbit_analog_write(int p, int l) {
-  printf("Writing value %d to pin %d\n", l, p);
+  printf("Writing value %d to pin %d", l, p);
 }
 
 int microbit_analog_read(int p) {
