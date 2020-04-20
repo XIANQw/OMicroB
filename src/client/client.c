@@ -14,10 +14,10 @@
  
 #define SERVER_W "serverWrite"
 #define SERVER_R "serverRead"
-#define SIG_A __SIGRTMIN+10
-#define SIG_NO_A __SIGRTMIN+11
-#define SIG_B __SIGRTMIN+12
-#define SIG_NO_B __SIGRTMIN+13
+#define SIG_A 42
+#define SIG_NO_A 43
+#define SIG_B 44
+#define SIG_NO_B 45
 
 
 void main(){

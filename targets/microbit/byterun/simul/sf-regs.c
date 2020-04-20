@@ -38,6 +38,7 @@ void lisener_init(){
   signal(SIG_B, press_B);
   signal(SIG_NO_A, clear_A);
   signal(SIG_NO_B, clear_B);
+  sleep(1);
 }
 
 

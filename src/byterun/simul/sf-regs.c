@@ -597,26 +597,29 @@ void avr_serial_write(char c){
 /******************************************************************************/
 /******************************************************************************/
 /******************************************************************************/
-#include "sf-regs.h"
 #include <signal.h>
 
-#define SIG_A __SIGRTMIN+10
-#define SIG_NO_A __SIGRTMIN+11
-#define SIG_B __SIGRTMIN+12
-#define SIG_NO_B __SIGRTMIN+13
+#define SIG_A 42
+#define SIG_NO_A 43
+#define SIG_B 44
+#define SIG_NO_B 45
 
-void press_A(int sig){
-  button[0] = 1;
+void handler(int sig){
+  switch (sig) {
+  case SIG_A:
+    button[0] = 1; break;
+  case SIG_NO_A:
+    button[0] = 0; break;
+  case SIG_B:
+    button[1] = 1; break;
+  case SIG_NO_B:
+    button[1] = 0; break;
+  default:
+    break;
+  }
 }
-void press_B(int sig){
-  button[1] = 1;
-}
-void clear_A(int sig){
-  button[0] = 0;
-}
-void clear_B(int sig){
-  button[1] = 0;
-}
+
+
 void lisener_init(){
   int fd_w;
   char msg_w[BUF_SIZE];
@@ -630,11 +633,13 @@ void lisener_init(){
   }else{
     printf("**************** server send :%s\n",msg_w);
   }
-  signal(SIG_A, press_A);
-  signal(SIG_B, press_B);
-  signal(SIG_NO_A, clear_A);
-  signal(SIG_NO_B, clear_B);
+  signal(SIG_A, handler);
+  signal(SIG_B, handler);
+  signal(SIG_NO_A, handler);
+  signal(SIG_NO_B, handler);
+  sleep(2);
 }
+
 
 
 void send_msg(char * str){
