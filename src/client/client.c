@@ -12,8 +12,8 @@
 #include <stdio.h>
 #include <string.h> 
  
-#define SERVER_W "serverWrite"
-#define SERVER_R "serverRead"
+#define SERVER_W "/tmp/serverWrite"
+#define SERVER_R "/tmp/serverRead"
 #define SIG_A 42
 #define SIG_NO_A 43
 #define SIG_B 44

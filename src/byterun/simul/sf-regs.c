@@ -623,10 +623,11 @@ void handler(int sig){
 void lisener_init(){
   int fd_w;
   char msg_w[BUF_SIZE];
-  fd_w = open(SERVER_W, O_RDWR);
+  fd_w = open(SERVER_W,O_RDWR);
   snprintf(msg_w, BUF_SIZE, "pid%d", getpid());
   if(fd_w < 0){
       perror("open pipe_read fail");
+      exit(0);
   }
   if (write(fd_w, msg_w, strlen(msg_w)+1) == -1){
     perror("server send msg fail");
@@ -640,11 +641,9 @@ void lisener_init(){
   sleep(2);
 }
 
-
-
 void send_msg(char * str){
     //pipe_write exist or not
-    if(access(SERVER_W,0) < 0){
+    if(access(SERVER_W, 0) < 0){
         printf("pipe_write %s doesn't exist\n",SERVER_W);
         return ;
     }
