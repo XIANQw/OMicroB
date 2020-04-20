@@ -42,8 +42,8 @@
 #define PIN19 19
 #define PIN20 20
 
-#define SERVER_W "/home/xian/Projets/M1-S2/PSTL/OMicroB/src/client/serverWrite"
-#define SERVER_R "/home/xian/Projets/M1-S2/PSTL/OMicroB/src/client/serverRead"
+#define SERVER_W "/tmp/serverWrite"
+#define SERVER_R "/tmp/serverRead"
 
 #define BUF_SIZE 50
 char buf[BUF_SIZE];

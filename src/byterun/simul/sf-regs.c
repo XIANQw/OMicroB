@@ -619,7 +619,6 @@ void handler(int sig){
   }
 }
 
-
 void lisener_init(){
   int fd_w;
   char msg_w[BUF_SIZE];
