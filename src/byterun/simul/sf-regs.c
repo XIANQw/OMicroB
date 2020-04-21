@@ -619,7 +619,9 @@ void handler(int sig){
   }
 }
 
-void lisener_init(){
+void simul_init(){
+  if(flag_simul[0]) return;
+  flag_simul[0]=1;
   int fd_w;
   char msg_w[BUF_SIZE];
   fd_w = open(SERVER_W,O_RDWR);
@@ -637,7 +639,7 @@ void lisener_init(){
   signal(SIG_B, handler);
   signal(SIG_NO_A, handler);
   signal(SIG_NO_B, handler);
-  sleep(2);
+  sleep(1);
 }
 
 void send_msg(char * str){
@@ -662,15 +664,18 @@ void send_msg(char * str){
 
 
 void microbit_print_string(char *str) {
+  simul_init();
   send_msg(str);
 }
 
 void microbit_print_int(int i) {
+  simul_init();
   snprintf(buf, 50, "%d", i);
   send_msg(buf);
 }
 
 void microbit_write_pixel(int x, int y, int l) {
+  simul_init();
   if((l==0 && image[6*y+x]==' ') || (l!=0 && image[6*y+x]=='.')) return;
   if(l==0) image[6*y+x] = ' ';
   else image[6*y+x] = '.';
@@ -678,6 +683,7 @@ void microbit_write_pixel(int x, int y, int l) {
 }
 
 void microbit_print_image(char *str) {
+  simul_init();
   char tmp[30];
   for(int y = 0; y < 5; y++) {
     for(int x = 0; x < 5; x++) {
@@ -695,6 +701,7 @@ void microbit_clear_screen() {}
 
 int microbit_button_is_pressed(int b) {
   // printf("Button is %d\n", b);
+  simul_init();
   if(b > 2 || b < 0){
     printf("button %d dosen't exist", b);
     return 0;
@@ -704,29 +711,35 @@ int microbit_button_is_pressed(int b) {
 }
 
 void microbit_pin_mode(int p, int m) {
+  simul_init();
   if(m == 0) snprintf(buf, 50, "Setting PIN%d to INPUT", p);
   else snprintf(buf, 50, "Setting PIN%d to OUTPUT", p);
   send_msg(buf);
 }
 
 void microbit_digital_write(int p, int l) {
+  simul_init();
   snprintf(buf, 50, "Writing value %d to pin %d", l, p);
   send_msg(buf);
 }
 
 void microbit_analog_write(int p, int l) {
+  simul_init();
   printf("Writing value %d to pin %d", l, p);
 }
 
 int microbit_analog_read(int p) {
+  simul_init();
   return 0;
 }
 
 int microbit_digital_read(int p) {
+  simul_init();
   return 0;
 }
 
 void microbit_delay(int ms) {
+  simul_init();
   usleep((useconds_t) ms * 1000);
 }
 
@@ -738,10 +751,12 @@ int microbit_millis() {
 /******************************************************************************/
 
 void microbit_serial_write(char c) {
+  simul_init();
   printf("serial write %c\n", c);
 }
 
 char microbit_serial_read() {
+  simul_init();
   return 0;
 }
 

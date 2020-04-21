@@ -110,9 +110,10 @@ char avr_serial_read();
 #define BUF_SIZE 50
 char buf[BUF_SIZE];
 bool button[2];
+bool flag_simul[1];
 char image[30];
 
-void lisener_init();
+void simul_init();
 void send_msg(char * str);
 void microbit_pin_mode(int p, int m);
 void microbit_digital_write(int p, int l);
