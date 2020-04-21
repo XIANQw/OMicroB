@@ -371,8 +371,8 @@ void delay(int ms) {
 }
 
 int millis() {
-  printf("millis\n");
-  return 0;
+  // printf("millis\n");
+  return 100;
 }
 
 /******************************/
@@ -697,7 +697,14 @@ void microbit_print_image(char *str) {
   send_msg(tmp);
 }
 
-void microbit_clear_screen() {}
+void microbit_clear_screen() {
+  simul_init();
+  for(int y=0; y<5; y++){
+    for(int x=0; x<5; x++){
+      image[y*6+x] = ' ';
+    }
+  }
+}
 
 int microbit_button_is_pressed(int b) {
   // printf("Button is %d\n", b);
@@ -712,6 +719,7 @@ int microbit_button_is_pressed(int b) {
 
 void microbit_pin_mode(int p, int m) {
   simul_init();
+  pins_mode[p] = m;
   if(m == 0) snprintf(buf, 50, "Setting PIN%d to INPUT", p);
   else snprintf(buf, 50, "Setting PIN%d to OUTPUT", p);
   send_msg(buf);
@@ -719,6 +727,7 @@ void microbit_pin_mode(int p, int m) {
 
 void microbit_digital_write(int p, int l) {
   simul_init();
+  pins_val[p] = l;
   snprintf(buf, 50, "Writing value %d to pin %d", l, p);
   send_msg(buf);
 }
@@ -726,16 +735,17 @@ void microbit_digital_write(int p, int l) {
 void microbit_analog_write(int p, int l) {
   simul_init();
   printf("Writing value %d to pin %d", l, p);
+  pins_val[p] = l;
 }
 
 int microbit_analog_read(int p) {
   simul_init();
-  return 0;
+  return pins_val[p];
 }
 
 int microbit_digital_read(int p) {
   simul_init();
-  return 0;
+  return pins_val[p];
 }
 
 void microbit_delay(int ms) {
@@ -752,12 +762,25 @@ int microbit_millis() {
 
 void microbit_serial_write(char c) {
   simul_init();
-  printf("serial write %c\n", c);
+  if(buf_ptr>BUF_SIZE) {
+    perror("buffer pointer > buffer size");
+    exit(0);
+  }
+  // printf("serial write %c\n", c);
+  buf[buf_ptr++] = c;
 }
 
 char microbit_serial_read() {
   simul_init();
-  return 0;
+  if(ptr_head == buf_ptr){
+    perror("head pointer > buffer ptr");
+    exit(0);
+  }
+  char res = buf[ptr_head++];
+  if(ptr_head == buf_ptr){
+    buf_ptr=0; ptr_head=0;
+  }
+  return res;
 }
 
 /*****************************************************************************/
