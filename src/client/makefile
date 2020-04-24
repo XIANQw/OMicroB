@@ -1,5 +1,5 @@
 client: client.c
-	gcc -o $@ $^
+	gcc -o $@ -pthread $^
 
 clean:
 	rm client serverRead serverWrite 

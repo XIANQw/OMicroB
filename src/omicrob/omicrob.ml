@@ -11,7 +11,7 @@ let default_heap_size  = 256
 let default_gc         = "MAC"
 let default_arch       = 32
 
-let default_cxx_options = [ "-g"; "-Wall"; "-O"; "-std=c++11" ]
+let default_cxx_options = [ "-g"; "-pthread"; "-Wall"; "-O"; "-std=c++11" ]
 
 let device_config = ref (module DefaultConfig : DEVICECONFIG)
 let set_config name =

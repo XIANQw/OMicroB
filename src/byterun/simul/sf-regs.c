@@ -598,47 +598,72 @@ void avr_serial_write(char c){
 /******************************************************************************/
 /******************************************************************************/
 #include <signal.h>
+#include <pthread.h>
 
-#define SIG_A 42
-#define SIG_NO_A 43
-#define SIG_B 44
-#define SIG_NO_B 45
+#define BUF_SIZE 50
 
-void handler(int sig){
-  switch (sig) {
-  case SIG_A:
-    button[0] = 1; break;
-  case SIG_NO_A:
-    button[0] = 0; break;
-  case SIG_B:
-    button[1] = 1; break;
-  case SIG_NO_B:
-    button[1] = 0; break;
-  default:
-    break;
+pthread_t lisener;
+
+void* fun_lisener(void * arg){
+  printf("server: read processus start\n");
+  //pipe_read exist or not
+  if(access(SERVER_R,0) < 0){
+      printf("%s doesn't exist\n",SERVER_R); exit(0);
   }
+  //open pipe_read
+  int fd_r = open(SERVER_R,O_RDWR);
+  if(fd_r < 0){
+      perror("open pipe_read fail");
+  }
+  printf("\n---------------------server can recieve msg, pipe=%d\n", fd_r);
+  while(1){
+    if(read(fd_r, msg_r, BUF_SIZE)==-1){
+        perror("server recieve msg fail");
+    }else{
+      if((strlen(msg_r) > 1) && (strcmp("EOF",msg_r) != 0)){
+        printf("invalid instruction\n");
+      } else if(strlen(msg_r)==1){
+        switch (msg_r[0]){
+        case '1':
+          button[0]=1; break;
+        case '2':
+          button[0]=0; break;
+        case '3':
+          button[1]=1; break;
+        case '4':
+          button[1]=0; break;
+        default:
+          break;
+        }
+      } else if (strcmp("EOF",msg_r) == 0){
+        printf("client quit, stop read\n"); break;   
+      } else{
+        printf("server: msg is empty\n");
+      }
+    }
+  }//while
+  printf("---------------------notify：terminate read processus\n");
 }
+
 
 void simul_init(){
   if(flag_simul[0]) return;
   flag_simul[0]=1;
   int fd_w;
-  char msg_w[BUF_SIZE];
-  fd_w = open(SERVER_W,O_RDWR);
+  fd_w = open(SERVER_W, O_RDWR);
   snprintf(msg_w, BUF_SIZE, "pid%d", getpid());
   if(fd_w < 0){
-      perror("open pipe_read fail");
-      exit(0);
+    perror("open pipe_read fail"); exit(0);
   }
-  if (write(fd_w, msg_w, strlen(msg_w)+1) == -1){
+  if(write(fd_w, msg_w, strlen(msg_w)+1) == -1){
     perror("server send msg fail");
   }else{
-    printf("**************** server send :%s\n",msg_w);
+    printf("**************** server send :%s\n", msg_w);
   }
-  signal(SIG_A, handler);
-  signal(SIG_B, handler);
-  signal(SIG_NO_A, handler);
-  signal(SIG_NO_B, handler);
+  if (pthread_create(&lisener, NULL, fun_lisener, NULL)==-1){
+    perror("create lisener fail"); exit(0);
+  }
+  pthread_detach(lisener);
   sleep(1);
 }
 
@@ -670,8 +695,8 @@ void microbit_print_string(char *str) {
 
 void microbit_print_int(int i) {
   simul_init();
-  snprintf(buf, 50, "%d", i);
-  send_msg(buf);
+  snprintf(msg_w, BUF_SIZE, "%d", i);
+  send_msg(msg_w);
 }
 
 void microbit_write_pixel(int x, int y, int l) {
@@ -720,16 +745,16 @@ int microbit_button_is_pressed(int b) {
 void microbit_pin_mode(int p, int m) {
   simul_init();
   pins_mode[p] = m;
-  if(m == 0) snprintf(buf, 50, "Setting PIN%d to INPUT", p);
-  else snprintf(buf, 50, "Setting PIN%d to OUTPUT", p);
-  send_msg(buf);
+  if(m == 0) snprintf(msg_w, BUF_SIZE, "Setting PIN%d to INPUT", p);
+  else snprintf(msg_w, BUF_SIZE, "Setting PIN%d to OUTPUT", p);
+  send_msg(msg_w);
 }
 
 void microbit_digital_write(int p, int l) {
   simul_init();
   pins_val[p] = l;
-  snprintf(buf, 50, "Writing value %d to pin %d", l, p);
-  send_msg(buf);
+  snprintf(msg_w, BUF_SIZE, "Writing value %d to pin %d", l, p);
+  send_msg(msg_w);
 }
 
 void microbit_analog_write(int p, int l) {
@@ -767,7 +792,7 @@ void microbit_serial_write(char c) {
     exit(0);
   }
   // printf("serial write %c\n", c);
-  buf[buf_ptr++] = c;
+  msg_w[buf_ptr++] = c;
 }
 
 char microbit_serial_read() {
@@ -776,7 +801,7 @@ char microbit_serial_read() {
     perror("head pointer > buffer ptr");
     exit(0);
   }
-  char res = buf[ptr_head++];
+  char res = msg_w[ptr_head++];
   if(ptr_head == buf_ptr){
     buf_ptr=0; ptr_head=0;
   }

@@ -91,15 +91,13 @@ char avr_serial_read();
 #define PIN12 12
 #define PIN16 16
 
-
 #define SERVER_W "/tmp/serverWrite"
 #define SERVER_R "/tmp/serverRead"
 
 #define BUF_SIZE 50
-#define INPUT 0
-#define OUTPUT 1
 
-char buf[BUF_SIZE];
+char msg_r[BUF_SIZE];
+char msg_w[BUF_SIZE];
 int buf_ptr, ptr_head;
 bool button[2];
 bool flag_simul[1];
