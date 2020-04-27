@@ -599,6 +599,7 @@ void avr_serial_write(char c){
 /******************************************************************************/
 #include <signal.h>
 #include <pthread.h>
+#include "../../client/protocol.h"
 
 #define BUF_SIZE 50
 
@@ -702,9 +703,14 @@ void microbit_print_int(int i) {
 void microbit_write_pixel(int x, int y, int l) {
   simul_init();
   if((l==0 && image[6*y+x]==' ') || (l!=0 && image[6*y+x]=='.')) return;
-  if(l==0) image[6*y+x] = ' ';
-  else image[6*y+x] = '.';
-  send_msg(image);
+  if(l==0){
+    image[6*y+x] = ' ';
+    snprintf(msg_w, BUF_SIZE, "%d%d%d%d", SET_PIXEL, x, y, 1);
+  } else{ 
+    image[6*y+x] = '.';
+    snprintf(msg_w, BUF_SIZE, "%d%d%d%d", SET_PIXEL, x, y, 0);
+  }
+  send_msg(msg_w);
 }
 
 void microbit_print_image(char *str) {
@@ -712,23 +718,19 @@ void microbit_print_image(char *str) {
   char tmp[30];
   for(int y = 0; y < 5; y++) {
     for(int x = 0; x < 5; x++) {
-      if (str[y*5+x]==0) tmp[6*y+x] = ' ';
-      else tmp[6*y+x] = '.';
+      if (str[y*5+x]==0) tmp[5*y+x] = '0';
+      else tmp[5*y+x] = '1';
     }
-    tmp[6*(y+1)-1] = '\n';
   }
-  tmp[29] = '\0';
+  tmp[25] = '\0';
   strcpy(image, tmp);
-  send_msg(tmp);
+  snprintf(msg_w, BUF_SIZE, "%d%s", PRINT_IMAGE, tmp);
+  send_msg(msg_w);
 }
 
 void microbit_clear_screen() {
   simul_init();
-  for(int y=0; y<5; y++){
-    for(int x=0; x<5; x++){
-      image[y*6+x] = ' ';
-    }
-  }
+  snprintf(msg_w, BUF_SIZE, "%d", CLEAR_SCREEN);
 }
 
 int microbit_button_is_pressed(int b) {
@@ -738,7 +740,6 @@ int microbit_button_is_pressed(int b) {
     printf("button %d dosen't exist", b);
     return 0;
   }
-  // printf("button%d is %d\n",b, button[b]);
   return button[b];
 }
 
