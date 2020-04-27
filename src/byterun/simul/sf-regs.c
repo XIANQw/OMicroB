@@ -705,10 +705,10 @@ void microbit_write_pixel(int x, int y, int l) {
   if((l==0 && image[6*y+x]==' ') || (l!=0 && image[6*y+x]=='.')) return;
   if(l==0){
     image[6*y+x] = ' ';
-    snprintf(msg_w, BUF_SIZE, "%d%d%d%d", SET_PIXEL, x, y, 1);
+    snprintf(msg_w, BUF_SIZE, "%d%d%d%d", SET_PIXEL, x, y, 0);
   } else{ 
     image[6*y+x] = '.';
-    snprintf(msg_w, BUF_SIZE, "%d%d%d%d", SET_PIXEL, x, y, 0);
+    snprintf(msg_w, BUF_SIZE, "%d%d%d%d", SET_PIXEL, x, y, 1);
   }
   send_msg(msg_w);
 }

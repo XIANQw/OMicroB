@@ -2,7 +2,11 @@
 #include <fcntl.h> //pid_t
 #include <pthread.h> //pthread_t
 #include <unistd.h> //read, write
-#include<sys/stat.h> //mkfifo
+#include <sys/stat.h> //mkfifo
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#include <signal.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,7 +28,7 @@ int bval[2];
 int fd_w,fd_r;
 int pid_w,pid_r;
 char msg_w[BUFSIZ],msg_r[BUFSIZ];
-pid_t server_pid=0;
+pid_t server_pid=0, mypid=0;
 
 void modify_screen(int x, int y, int v){
     if(x>=SCREEN_SIZE || x<0 || y >= SCREEN_SIZE || y < 0) return;
@@ -55,6 +59,8 @@ void press_b(GtkWidget* widget, gpointer data){
 
 void destroy(GtkWidget* widget, gpointer data){
     gtk_main_quit();
+    kill(mypid, SIGKILL);
+    kill(server_pid, SIGKILL);
 }
 
 int gui(int argc, char **argv){
@@ -131,13 +137,13 @@ void* fun_lisener(void * arg){
         case '1':
             x=msg_r[1]-'0';
             y=msg_r[2]-'0';
-            printf("x=%d, y=%d\n", x, y);
+            // printf("x=%d, y=%d\n", x, y);
             modify_screen(x,y,msg_r[3]-'0');
             break;
         case '2':
             clear_screen(); break;
         default:
-            break;
+            printf("--\n");
         }
     }//while
     printf("---------------------notify：client terminated read processus\n");
@@ -148,6 +154,7 @@ int main(){
     printf("Program start\n");
     pthread_t pgui;
     pthread_create(&pgui, NULL, (void *)&gui, NULL);
+    mypid = getpid();
     // pipe_read
     if(access(SERVER_W,0) < 0){
         pid_r = mkfifo(SERVER_W,0700);
@@ -187,7 +194,7 @@ int main(){
             server_pid = atoi(pidch);
             printf("server_pid=%d\n", server_pid);
             break;
-        }    
+        }
     }
     printf("client start communication\n");
     pthread_t plisener;
