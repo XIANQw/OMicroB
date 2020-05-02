@@ -2,19 +2,19 @@
 #include <pthread.h> //pthread_t
 #include <unistd.h> //read, write
 #include <sys/stat.h> //mkfifo
+#include <sys/shm.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 #include <signal.h>
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h> 
-#include "gui.h"
+#include "shmdata.h"
 
 #define SCREEN_SIZE 5
-#define SERVER_W "/tmp/serverWrite"
-#define SERVER_R "/tmp/serverRead"
 
 
 GtkWidget* window; // main window
@@ -25,10 +25,11 @@ GtkWidget* button; // buttons
 
 GtkWidget* screen[SCREEN_SIZE][SCREEN_SIZE];
 int bval[2];
-int fd_w,fd_r;
-int pid_w,pid_r;
 char msg_w[BUFSIZ],msg_r[BUFSIZ];
 pid_t server_pid=0, mypid=0;
+void *vshr = NULL, *vshw=NULL;
+struct shared_use_st *shr, *shw;
+int shwid, shrid;
 
 void modify_screen(int x, int y, int v){
     if(x>=SCREEN_SIZE || x<0 || y >= SCREEN_SIZE || y < 0) return;
@@ -49,14 +50,18 @@ void press_a(GtkWidget* widget, gpointer data){
     if(bval[0]) snprintf(msg_w, BUFSIZ, "%d", 1);
     else snprintf(msg_w, BUFSIZ, "%d", 2);
     printf("send instr %s\n", msg_w);
-    write(fd_w, msg_w, strlen(msg_w));
+    while(shw->written==1){}
+    strcpy(shw->text, msg_w);
+    shw->written=1;
 }
 void press_b(GtkWidget* widget, gpointer data){
     bval[1]= 1-bval[1];
     if(bval[1]) snprintf(msg_w, BUFSIZ, "%d", 3);
     else snprintf(msg_w, BUFSIZ, "%d", 4);
     printf("send instr %s\n", msg_w);
-    write(fd_w, msg_w, strlen(msg_w));
+    while(shw->written==1) {}
+    strcpy(shw->text, msg_w);
+    shw->written=1;
 }
 
 void gui_destroy(GtkWidget* widget, gpointer data){
@@ -118,37 +123,35 @@ void* gui_lisener(void * arg){
     printf("\n---------------------notify: client can recieve msg\n");
     int x=0, y=0;
     while(1){           
-        if(read(fd_r,msg_r,BUFSIZ) == -1){
-            perror("client recieve msg fail"); continue;
-        }
-        size_t len = strlen(msg_r);
+        if(shr->written == 0) continue;
+        size_t len = strlen(shr->text);
         if(len==0){
             printf("msg is empty\n"); continue;
         }
-        printf("msg_r=%s\n", msg_r);
-        char op = msg_r[0];
+        printf("msg=%s\n", shr->text);
+        char op = shr->text[0];
         switch (op) {
         case '0':
             for(int i=0; i<SCREEN_SIZE; i++){
                 for(int j=0; j<SCREEN_SIZE; j++){
                     int index = SCREEN_SIZE*i+j+1;
                     if(index>=len) break;
-                    modify_screen(j, i, msg_r[index]-'0');
+                    modify_screen(j, i, shr->text[index]-'0');
                 }
             }
         case '1':
-            x=msg_r[1]-'0';
-            y=msg_r[2]-'0';
+            x=shr->text[1]-'0';
+            y=shr->text[2]-'0';
             // printf("x=%d, y=%d\n", x, y);
-            modify_screen(x,y,msg_r[3]-'0');
+            modify_screen(x,y,shr->text[3]-'0');
             break;
         case '2':
             clear_screen(); break;
         default:
             printf("--\n");
         }
+        shr->written = 0;
     }//while
-    printf("---------------------notify：client terminated read processus\n");
 }
 
 
@@ -163,35 +166,10 @@ int main(int argc, char ** argv){
     pthread_t pgui;
     pthread_create(&pgui, NULL, (void *)&gui, NULL);
     mypid = getpid();
-    // pipe_read
-    if(access(SERVER_W,0) < 0){
-        pid_r = mkfifo(SERVER_W,0700);
-        if(pid_r < 0){
-            perror("pipe_read create fail"); exit(0);
-        }
-        printf("pipe_read%s create\n",SERVER_W);
-    }
-    fd_r = open(SERVER_W,O_RDWR);
-    if(fd_r < 0){
-        perror("open pipe_read fail"); exit(0);
-    }
-    printf("open pipe_read\n");
- 
-    //pipe_write
-    if(access(SERVER_R,0) < 0){
-        pid_w = mkfifo(SERVER_R,0700);
-        if(pid_w < 0){
-            perror("client create pipe_write fail"); exit(0);
-        }
-        printf("pipe_write%s create\n",SERVER_R);
-    }
-    fd_w = open(SERVER_R,O_RDWR);
-    if(fd_w < 0){
-        perror("open pipe_write fail"); exit(0);
-    }
-    printf("open pipe_write\n");
-    
-    // get pid of server
+    // shm of server_write 1234
+    shr = create_shm(1234);
+    // shm of server_read 1230
+    shw = create_shm(1230);
     printf("client start communication\n");
     pthread_t plisener;
     pthread_create(&plisener, NULL, (void *)&gui_lisener, NULL);

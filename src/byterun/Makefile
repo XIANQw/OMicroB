@@ -35,7 +35,6 @@ $(LIB)/libcamlrun.a: $(OBJECTS)
 	$(OCAMLC) -c -ccopt -Wall -ccopt -D__OCAML__ $<
 	mv $*.o .build/
 
-
 clean:
 	@rm -Rf .build/ $(TARGETS)
 

@@ -7,10 +7,10 @@
  
 int main(){
 	int running = 1;
+	int shmid;
 	void *shm = NULL;
 	struct shared_use_st *shared = NULL;
 	char buffer[BUFSIZ + 1];//用于保存输入的文本
-	int shmid;
 	//创建共享内存
 	shmid = shmget((key_t)1234, sizeof(struct shared_use_st), 0666|IPC_CREAT);
 	if(shmid == -1)

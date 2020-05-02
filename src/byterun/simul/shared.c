@@ -70,3 +70,29 @@ void V(int sem){
     exit(1);
   }
 }
+
+struct shared_use_st* create_shm(key_t id){
+    struct shared_use_st* shmdata;
+    int shmid = shmget(id, sizeof(struct shared_use_st), 0666|IPC_CREAT);
+    if(shmid < 0){
+      perror("shmget fail"); exit(1);
+    }
+    void * shm = shmat(shmid, 0, 0);
+    if(shm < 0){
+      perror("shmat failed"); exit(1);
+    }
+    shmdata=(struct shared_use_st*)shm;
+    shmdata->shmid = shmid;
+    shmdata->written = 0;
+    printf("id=%d, memory attached at %X\n",shmid, shmdata);
+    return shmdata;
+}
+
+void free_shm(struct shared_use_st* shmdata){
+    if(shmdt(shmdata) == -1){
+		perror("shmdt failed"); exit(1);
+	}
+	if(shmctl(shmdata->shmid, IPC_RMID, 0) == -1){
+		perror("shmctl(IPC_RMID) failed"); exit(1);
+	}
+}

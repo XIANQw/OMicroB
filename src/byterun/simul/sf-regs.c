@@ -599,57 +599,51 @@ void avr_serial_write(char c){
 /******************************************************************************/
 #include <signal.h>
 #include <pthread.h>
+#include <sys/shm.h>
 #include "../client/protocol.h"
-#include "../client/gui.h"
+#include "shared.h"
 
 #define BUF_SIZE 50
 
 pthread_mutex_t mute;
-bool _pause= false;
 pthread_t lisener;
+
+void *vshw = NULL, *vshr=NULL;
+struct shared_use_st *shr = NULL, *shw=NULL;
+
 
 void* fun_lisener(void * arg){
   printf("server: read processus start\n");
-  //pipe_read exist or not
-  if(access(SERVER_R,0) < 0){
-      printf("%s doesn't exist\n",SERVER_R); exit(0);
-  }
-  //open pipe_read
-  int fd_r = open(SERVER_R,O_RDWR);
-  if(fd_r < 0){
-      perror("open pipe_read fail");
-  }
-  printf("\n---------------------server can recieve msg, pipe=%d\n", fd_r);
+  shr = create_shm((key_t)1230);
   while(1){
-    if(read(fd_r, msg_r, BUF_SIZE)==-1){
-        perror("server recieve msg fail");
-    }else{
-      if(strlen(msg_r) > 0){
-        printf("recieve %s\n", msg_r);
-        
-        pthread_mutex_lock(&mute);
-        switch (msg_r[0]){
-        case '1':
-          button[0]=1; break;
-        case '2':
-          button[0]=0; break;
-        case '3':
-          button[1]=1; break;
-        case '4':
-          button[1]=0; break;
-        default:
-          break;
-        }
-        pthread_mutex_unlock(&mute);
-
-      } else if (strcmp("EOF",msg_r) == 0){
-        printf("client quit, stop read\n"); break;   
-      } else{
-        printf("server: msg is empty\n");
+    while(shr->written == 0) {sleep(1);}
+    
+    if(strlen(shr->text) > 0){
+      printf("recieve %s\n", shr->text);
+      pthread_mutex_lock(&mute);
+      switch (shr->text[0]){
+      case '1':
+        button[0]=1; break;
+      case '2':
+        button[0]=0; break;
+      case '3':
+        button[1]=1; break;
+      case '4':
+        button[1]=0; break;
+      default:
+        break;
       }
+      pthread_mutex_unlock(&mute);
+    } else if (strcmp("EOF",shr->text) == 0){
+      printf("client quit, stop read\n"); break;   
+    } else{
+      printf("server: msg is empty\n");
     }
+    shr->written=0;
+    
   }//while
-  printf("---------------------notify：terminate read processus\n");
+  printf("---------------------notify：terminate read processus\n");  
+  return NULL;
 }
 
 
@@ -669,13 +663,10 @@ void simul_init(){
     printf("res=%d\n", res);
   }else{
     sleep(1);
-    int fd_w;
-    fd_w = open(SERVER_W, O_RDWR);
-    if(fd_w < 0){
-      perror("open pipe_read fail"); exit(0);
-    }
+    // shm server_write
+    shw = create_shm((key_t)1234);
     if (pthread_create(&lisener, NULL, fun_lisener, NULL)==-1){
-      perror("create lisener fail"); exit(0);
+      perror("create lisener fail"); exit(1);
     }
     pthread_detach(lisener);
     pthread_mutex_init(&mute, NULL);
@@ -684,22 +675,10 @@ void simul_init(){
 
 void send_msg(char * str){
     //pipe_write exist or not
-    if(access(SERVER_W, 0) < 0){
-        printf("pipe_write %s doesn't exist\n",SERVER_W);
-        return ;
-    }
-    //open pipe_write
-    int fd_w = open(SERVER_W, O_RDWR);
-
-    if(fd_w < 0){
-        printf("open pipe_write fail %d\n", fd_w);
-        exit(0);
-    }
-    printf("send: len=%ld fd_w=%d\n%s\n", strlen(str), fd_w, str);
-    if (write(fd_w, str, strlen(str)+1) == -1){
-      perror("server send msg fail");
-    }
-    close(fd_w);
+    while(shw->written==1){printf("waiting;\n"); sleep(1);}
+    strcpy(shw->text, str);
+    printf("send: len=%ld \n%s\n", strlen(str), str);
+    shw->written = 1;
 }
 
 
