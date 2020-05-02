@@ -1,5 +1,4 @@
 #include <gtk/gtk.h>
-#include <fcntl.h> //pid_t
 #include <pthread.h> //pthread_t
 #include <unistd.h> //read, write
 #include <sys/stat.h> //mkfifo
@@ -11,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h> 
+#include "gui.h"
 
 #define SCREEN_SIZE 5
 #define SERVER_W "/tmp/serverWrite"
@@ -48,19 +48,21 @@ void press_a(GtkWidget* widget, gpointer data){
     bval[0]= 1-bval[0];
     if(bval[0]) snprintf(msg_w, BUFSIZ, "%d", 1);
     else snprintf(msg_w, BUFSIZ, "%d", 2);
+    printf("send instr %s\n", msg_w);
     write(fd_w, msg_w, strlen(msg_w));
 }
 void press_b(GtkWidget* widget, gpointer data){
     bval[1]= 1-bval[1];
     if(bval[1]) snprintf(msg_w, BUFSIZ, "%d", 3);
     else snprintf(msg_w, BUFSIZ, "%d", 4);
+    printf("send instr %s\n", msg_w);
     write(fd_w, msg_w, strlen(msg_w));
 }
 
-void destroy(GtkWidget* widget, gpointer data){
+void gui_destroy(GtkWidget* widget, gpointer data){
     gtk_main_quit();
-    kill(mypid, SIGKILL);
     kill(server_pid, SIGKILL);
+    kill(mypid, SIGKILL);
 }
 
 int gui(int argc, char **argv){
@@ -71,7 +73,7 @@ int gui(int argc, char **argv){
 
     gtk_window_set_title(GTK_WINDOW(window), "simulator");
     
-    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(destroy), NULL);
+    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gui_destroy), NULL);
     gtk_container_set_border_width(GTK_CONTAINER(window), 150);
     
     box = gtk_vbox_new(FALSE, 3);
@@ -111,7 +113,7 @@ int gui(int argc, char **argv){
     return 0;
 }
 
-void* fun_lisener(void * arg){
+void* gui_lisener(void * arg){
     printf("read processus start\n");
     printf("\n---------------------notify: client can recieve msg\n");
     int x=0, y=0;
@@ -150,8 +152,14 @@ void* fun_lisener(void * arg){
 }
 
 
-int main(){
+int main(int argc, char ** argv){
     printf("Program start\n");
+    if(argc < 2){ 
+        printf("argc=%d", argc);
+        exit(0);
+    }
+    server_pid = atoi(argv[1]);
+    printf("pid=%d\n", server_pid);
     pthread_t pgui;
     pthread_create(&pgui, NULL, (void *)&gui, NULL);
     mypid = getpid();
@@ -184,21 +192,9 @@ int main(){
     printf("open pipe_write\n");
     
     // get pid of server
-    while(1){
-        if( read(fd_r,msg_r,BUFSIZ) == -1 ){
-            perror("client recieve msg fail"); exit(0);
-        }
-        if ((strlen(msg_r) > 3) && (msg_r[0]=='p') && (msg_r[1]='i') && (msg_r[2]=='d')){
-            char pidch[10];
-            strcpy(pidch, msg_r+3);
-            server_pid = atoi(pidch);
-            printf("server_pid=%d\n", server_pid);
-            break;
-        }
-    }
     printf("client start communication\n");
     pthread_t plisener;
-    pthread_create(&plisener, NULL, (void *)&fun_lisener, NULL);
+    pthread_create(&plisener, NULL, (void *)&gui_lisener, NULL);
     pthread_join(pgui, NULL);
     pthread_join(plisener, NULL);
     return 0;

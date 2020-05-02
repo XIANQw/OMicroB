@@ -12,7 +12,7 @@ OBJECTS :=              \
   .build/format.o       \
   .build/sf-regs.o      \
   .build/shared.o       \
-  .build/simul.o
+  .build/simul.o		
 
 byterun: $(TARGETS) $(ARCHS)
 
@@ -34,6 +34,7 @@ $(LIB)/libcamlrun.a: $(OBJECTS)
 .build/%.o: simul/%.c $(HEADERS)
 	$(OCAMLC) -c -ccopt -Wall -ccopt -D__OCAML__ $<
 	mv $*.o .build/
+
 
 clean:
 	@rm -Rf .build/ $(TARGETS)

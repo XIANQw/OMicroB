@@ -599,10 +599,13 @@ void avr_serial_write(char c){
 /******************************************************************************/
 #include <signal.h>
 #include <pthread.h>
-#include "../../client/protocol.h"
+#include "../client/protocol.h"
+#include "../client/gui.h"
 
 #define BUF_SIZE 50
 
+pthread_mutex_t mute;
+bool _pause= false;
 pthread_t lisener;
 
 void* fun_lisener(void * arg){
@@ -621,9 +624,10 @@ void* fun_lisener(void * arg){
     if(read(fd_r, msg_r, BUF_SIZE)==-1){
         perror("server recieve msg fail");
     }else{
-      if((strlen(msg_r) > 1) && (strcmp("EOF",msg_r) != 0)){
-        printf("invalid instruction\n");
-      } else if(strlen(msg_r)==1){
+      if(strlen(msg_r) > 0){
+        printf("recieve %s\n", msg_r);
+        
+        pthread_mutex_lock(&mute);
         switch (msg_r[0]){
         case '1':
           button[0]=1; break;
@@ -636,6 +640,8 @@ void* fun_lisener(void * arg){
         default:
           break;
         }
+        pthread_mutex_unlock(&mute);
+
       } else if (strcmp("EOF",msg_r) == 0){
         printf("client quit, stop read\n"); break;   
       } else{
@@ -650,22 +656,30 @@ void* fun_lisener(void * arg){
 void simul_init(){
   if(flag_simul[0]) return;
   flag_simul[0]=1;
-  int fd_w;
-  fd_w = open(SERVER_W, O_RDWR);
-  snprintf(msg_w, BUF_SIZE, "pid%d", getpid());
-  if(fd_w < 0){
-    perror("open pipe_read fail"); exit(0);
-  }
-  if(write(fd_w, msg_w, strlen(msg_w)+1) == -1){
-    perror("server send msg fail");
+  
+  pid_t child = vfork();
+  if(child < 0) exit(0);
+  if(child == 0){
+    printf("child\n");
+    char pidstr[10];
+    snprintf(pidstr, 10, "%d", getppid());
+    printf("father=%d\n", getppid());
+    char *const argv[] = {"gui", pidstr, NULL};
+    int res = execvp("/tmp/gui",argv);
+    printf("res=%d\n", res);
   }else{
-    printf("**************** server send :%s\n", msg_w);
+    sleep(1);
+    int fd_w;
+    fd_w = open(SERVER_W, O_RDWR);
+    if(fd_w < 0){
+      perror("open pipe_read fail"); exit(0);
+    }
+    if (pthread_create(&lisener, NULL, fun_lisener, NULL)==-1){
+      perror("create lisener fail"); exit(0);
+    }
+    pthread_detach(lisener);
+    pthread_mutex_init(&mute, NULL);
   }
-  if (pthread_create(&lisener, NULL, fun_lisener, NULL)==-1){
-    perror("create lisener fail"); exit(0);
-  }
-  pthread_detach(lisener);
-  sleep(1);
 }
 
 void send_msg(char * str){
@@ -682,7 +696,7 @@ void send_msg(char * str){
         exit(0);
     }
     printf("send: len=%ld fd_w=%d\n%s\n", strlen(str), fd_w, str);
-    if ( write(fd_w, str, strlen(str)+1) == -1){
+    if (write(fd_w, str, strlen(str)+1) == -1){
       perror("server send msg fail");
     }
     close(fd_w);
@@ -740,7 +754,10 @@ int microbit_button_is_pressed(int b) {
     printf("button %d dosen't exist", b);
     return 0;
   }
-  return button[b];
+  pthread_mutex_lock(&mute);
+  int res = button[b];
+  pthread_mutex_unlock(&mute);
+  return res;
 }
 
 void microbit_pin_mode(int p, int m) {

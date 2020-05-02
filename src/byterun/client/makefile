@@ -1,8 +1,8 @@
-all: gui client
+all: gui
 
 gui: gui.o
 	gcc -o $@ $^ `pkg-config --cflags --libs gtk+-2.0` -pthread
-
+	@mv gui /tmp/
 client: client.o
 	gcc -o $@ $^ -pthread
 
