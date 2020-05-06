@@ -614,7 +614,12 @@ struct shared_use_st *shr = NULL, *shw=NULL;
 
 void* fun_lisener(void * arg){
   while(1){
-    while(shr->written == 0) {sleep(0.3);}
+    pthread_mutex_lock(&shr->mute);
+    printf("server lisener lock\n");  
+    if(shr->written==0){ // server lisener bloc, until client writer notify
+      printf("server lisener wait\n");
+      pthread_cond_wait(&shr->cond_r, &shr->mute);
+    }
     
     if(strlen(shr->text) > 0){
       printf("recieve %s\n", shr->text);
@@ -638,7 +643,9 @@ void* fun_lisener(void * arg){
       printf("server: msg is empty\n");
     }
     shr->written=0;
-    
+    pthread_cond_signal(&shr->cond_w); //notift client writer
+    printf("server lisener notify client writer\n");
+    pthread_mutex_unlock(&shr->mute);
   }//while
   printf("---------------------notify：terminate read processus\n");  
   return NULL;
@@ -661,7 +668,10 @@ void simul_init(){
   shr=(struct shared_use_st*)vshr;
   shr->shmid = shrid;
   shr->written = 0;
-  printf("id=%d, memory attached at %X\n",shrid, shr);
+  pthread_mutex_init(&shr->mute, NULL);
+  pthread_cond_init(&shr->cond_r, NULL);
+  pthread_cond_init(&shr->cond_w, NULL);
+  printf("shrid=%d, memory attached at %X\n",shrid, shr);
 
   int shwid = shmget((key_t)1230, sizeof(struct shared_use_st), 0666|IPC_CREAT);
   if(shwid < 0){
@@ -674,7 +684,10 @@ void simul_init(){
   shw=(struct shared_use_st*)vshw;
   shw->shmid = shwid;
   shw->written = 0;
-  printf("id=%d, memory attached at %X\n",shwid, shw);
+  pthread_mutex_init(&shw->mute, NULL);
+  pthread_cond_init(&shw->cond_r, NULL);
+  pthread_cond_init(&shw->cond_w, NULL);
+  printf("shwid=%d, memory attached at %X\n",shwid, shw);
 
 
   pid_t child = vfork();
@@ -700,11 +713,19 @@ void simul_init(){
 }
 
 void send_msg(char * str){
-    //pipe_write exist or not
-    while(shw->written==1){sleep(0.3);}
-    strcpy(shw->text, str);
-    printf("send: len=%ld \n%s\n", strlen(str), str);
-    shw->written = 1;
+  //pipe_write exist or not
+  pthread_mutex_lock(&shw->mute);
+  printf("server sender lock\n");
+  if(shw->written==1) { // server writer bloc, util client lisener notify
+    printf("server sender wait\n");
+    pthread_cond_wait(&shw->cond_w, &shw->mute);
+  }
+  strcpy(shw->text, str);
+  printf("send: len=%ld \n%s\n", strlen(str), str);
+  shw->written = 1;
+  pthread_cond_signal(&shw->cond_r); // notify client lisener
+  printf("server sender notify client lisener\n");
+  pthread_mutex_unlock(&shw->mute);
 }
 
 

@@ -13,12 +13,16 @@
 #define SHARED_H
 
 #include <sys/shm.h>
+#include <pthread.h>
 
 #define TEXT_SZ 2048
  
 struct shared_use_st{	
 	int shmid;
 	int written;
+	pthread_mutex_t mute;
+	pthread_cond_t cond_r;
+	pthread_cond_t cond_w;
 	char text[TEXT_SZ];
 };
 
