@@ -1,9 +1,9 @@
 ## Compilation
 1. Client\
 GUI se trouve dans le dossier ./src/byterun/client, vous pouvez utiliser `make` pour compiler le programme de client. Par contre le fichier exécutable `gui` est bougé au dossier `/tmp/`. Dans le fonction `simul_init` (se trouve dans `./src/byterun/simul/sf-regs.c`), le processus fils exécute `/tmp/gui` pour exécuter le client.
-```make
-cd ./src/byterun/simul/client
-make
+```
+  cd ./src/byterun/simul/client
+  make
 ```
 2. Server\
 Compiler `./mytest/test.ml/` par `make` et exécuter `test.elf`
