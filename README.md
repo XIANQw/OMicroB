@@ -34,7 +34,7 @@ struct shared_use_st{
 ```
 
 
-![graph](https://github.com/XIANQw/OMicroB/tree/microbit/doc/graph.png)
+![graph](https://github.com/XIANQw/OMicroB/blob/microbit/doc/graph.jpg)
 
 #### Synchronization entre serveur écriture et client écouteur.
 La tâche du serveur écriture:
@@ -78,4 +78,4 @@ La tâche du serveur écouteur:
 `pthread_cond_signal` ne fonctionne pas, l'image suivant est le résultat d'exécution. On peut voir que client écouteur se bloque initialement, ensuite le serveur exécute et il écrit "OMicroB!" dans le mémoire partagé, il réveille le client écouteur en utilisant `pthread_cond_signal`, et il n'y a aucune d'erreur. (S'il y a des erreur, `pthread_cond_signal` rend un int négatif).
 Dans le prochain tour de bloc, le serveur se bloque aussi, donc dead lock se produit.
 
-![résultat](https://github.com/XIANQw/OMicroB/tree/microbit/doc/resultat.png)
+![résultat](https://github.com/XIANQw/OMicroB/blob/microbit/doc/resultat.png)
