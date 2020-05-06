@@ -614,7 +614,7 @@ struct shared_use_st *shr = NULL, *shw=NULL;
 
 void* fun_lisener(void * arg){
   while(1){
-    while(shr->written == 0) {sleep(1);}
+    while(shr->written == 0) {sleep(0.3);}
     
     if(strlen(shr->text) > 0){
       printf("recieve %s\n", shr->text);
@@ -701,7 +701,7 @@ void simul_init(){
 
 void send_msg(char * str){
     //pipe_write exist or not
-    while(shw->written==1){printf("waiting;\n"); sleep(0.5);}
+    while(shw->written==1){sleep(0.3);}
     strcpy(shw->text, str);
     printf("send: len=%ld \n%s\n", strlen(str), str);
     shw->written = 1;
