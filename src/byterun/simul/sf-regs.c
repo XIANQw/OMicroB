@@ -613,8 +613,6 @@ struct shared_use_st *shr = NULL, *shw=NULL;
 
 
 void* fun_lisener(void * arg){
-  printf("server: read processus start\n");
-  shr = create_shm((key_t)1230);
   while(1){
     while(shr->written == 0) {sleep(1);}
     
@@ -651,20 +649,48 @@ void simul_init(){
   if(flag_simul[0]) return;
   flag_simul[0]=1;
   
+
+  int shrid = shmget((key_t)1234, sizeof(struct shared_use_st), 0666|IPC_CREAT);
+  if(shrid < 0){
+    perror("shrid shrget fail"); exit(1);
+  }
+  void * vshr = shmat(shrid, 0, 0);
+  if(vshr < 0){
+    perror("vshr shmat failed"); exit(1);
+  }
+  shr=(struct shared_use_st*)vshr;
+  shr->shmid = shrid;
+  shr->written = 0;
+  printf("id=%d, memory attached at %X\n",shrid, shr);
+
+  int shwid = shmget((key_t)1230, sizeof(struct shared_use_st), 0666|IPC_CREAT);
+  if(shwid < 0){
+    perror("shwget fail"); exit(1);
+  }
+  void * vshw = shmat(shwid, 0, 0);
+  if(vshw < 0){
+    perror("shwid shmat failed"); exit(1);
+  }
+  shw=(struct shared_use_st*)vshw;
+  shw->shmid = shwid;
+  shw->written = 0;
+  printf("id=%d, memory attached at %X\n",shwid, shw);
+
+
   pid_t child = vfork();
   if(child < 0) exit(0);
   if(child == 0){
     printf("child\n");
-    char pidstr[10];
+    char pidstr[10], shwidstr[10], shridstr[10];
     snprintf(pidstr, 10, "%d", getppid());
+    snprintf(shwidstr, 10, "%d", shwid);
+    snprintf(shridstr, 10, "%d", shrid);
     printf("father=%d\n", getppid());
-    char *const argv[] = {"gui", pidstr, NULL};
+    char *const argv[] = {"gui", pidstr, shwidstr, shridstr, NULL};
     int res = execvp("/tmp/gui",argv);
     printf("res=%d\n", res);
   }else{
     sleep(1);
-    // shm server_write
-    shw = create_shm((key_t)1234);
     if (pthread_create(&lisener, NULL, fun_lisener, NULL)==-1){
       perror("create lisener fail"); exit(1);
     }
@@ -675,7 +701,7 @@ void simul_init(){
 
 void send_msg(char * str){
     //pipe_write exist or not
-    while(shw->written==1){printf("waiting;\n"); sleep(1);}
+    while(shw->written==1){printf("waiting;\n"); sleep(0.5);}
     strcpy(shw->text, str);
     printf("send: len=%ld \n%s\n", strlen(str), str);
     shw->written = 1;

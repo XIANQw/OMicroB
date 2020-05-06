@@ -161,15 +161,33 @@ int main(int argc, char ** argv){
         printf("argc=%d", argc);
         exit(0);
     }
+    mypid = getpid();
     server_pid = atoi(argv[1]);
+    shrid = atoi(argv[2]);
+    shwid = atoi(argv[3]);
+    void * vshw = shmat(shwid, 0, 0);
+    if(vshw < 0){
+        perror("shwid shmat failed"); exit(1);
+    }
+    shw=(struct shared_use_st*)vshw;
+    shw->shmid = shwid;
+    shw->written = 0;
+    printf("id=%d, memory attached at %X\n",shwid, shw);
+    
+    void * vshr = shmat(shrid, 0, 0);
+    if(vshr < 0){
+        perror("vshr shmat failed"); exit(1);
+    }
+    shr=(struct shared_use_st*)vshr;
+    shr->shmid = shrid;
+    shr->written = 0;
+    printf("id=%d, memory attached at %X\n",shrid, shr);
+
+
     printf("pid=%d\n", server_pid);
     pthread_t pgui;
     pthread_create(&pgui, NULL, (void *)&gui, NULL);
-    mypid = getpid();
-    // shm of server_write 1234
-    shr = create_shm(1234);
-    // shm of server_read 1230
-    shw = create_shm(1230);
+
     printf("client start communication\n");
     pthread_t plisener;
     pthread_create(&plisener, NULL, (void *)&gui_lisener, NULL);
