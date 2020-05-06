@@ -371,8 +371,8 @@ void delay(int ms) {
 }
 
 int millis() {
-  // printf("millis\n");
-  return 100;
+  printf("millis\n");
+  return 0;
 }
 
 /******************************/
@@ -597,11 +597,13 @@ void avr_serial_write(char c){
 /******************************************************************************/
 /******************************************************************************/
 /******************************************************************************/
+
 #include <signal.h>
 #include <pthread.h>
 #include <sys/shm.h>
 #include "../client/protocol.h"
 #include "shared.h"
+#include "sf-regs.h"
 
 #define BUF_SIZE 50
 

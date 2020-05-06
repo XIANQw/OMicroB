@@ -91,9 +91,6 @@ char avr_serial_read();
 #define PIN12 12
 #define PIN16 16
 
-#define SERVER_W "/tmp/serverWrite"
-#define SERVER_R "/tmp/serverRead"
-
 #define BUF_SIZE 50
 
 char msg_r[BUF_SIZE];
