@@ -27,9 +27,9 @@ GtkWidget* screen[SCREEN_SIZE][SCREEN_SIZE];
 int bval[2];
 char msg_w[BUFSIZ],msg_r[BUFSIZ];
 pid_t server_pid=0, mypid=0;
-void *vshr = NULL, *vshw=NULL;
-struct shared_use_st *shr, *shw;
-int shwid, shrid;
+void *vshm1 = NULL, *vshm2=NULL;
+struct shared_use_st *shm1, *shm2;
+int shm2id, shm1id;
 
 void modify_screen(int x, int y, int v){
     if(x>=SCREEN_SIZE || x<0 || y >= SCREEN_SIZE || y < 0) return;
@@ -51,17 +51,17 @@ void press_a(GtkWidget* widget, gpointer data){
     else snprintf(msg_w, BUFSIZ, "%d", 2);
     printf("send instr %s\n", msg_w);
     
-    pthread_mutex_lock(&shw->mute);
+    pthread_mutex_lock(&shm2->mute);
     printf("client sender_a lock\n");
-    if(shw->written==1){ // client writer wait, util server lisener notify
+    if(shm2->written==1){ // client writer wait, util server lisener notify
         printf("client sender_a wait\n");
-        pthread_cond_wait(&shw->cond_w, &shw->mute);
+        pthread_cond_wait(&shm2->cond_w, &shm2->mute);
     }
-    strcpy(shw->text, msg_w);
-    shw->written=1;
-    pthread_cond_signal(&shw->cond_r); //notify server lisener
+    strcpy(shm2->text, msg_w);
+    shm2->written=1;
+    pthread_cond_signal(&shm2->cond_r); //notify server lisener
     printf("client sender_a notify server lisener\n");
-    pthread_mutex_unlock(&shw->mute);
+    pthread_mutex_unlock(&shm2->mute);
 }
 void press_b(GtkWidget* widget, gpointer data){
     bval[1]= 1-bval[1];
@@ -69,17 +69,17 @@ void press_b(GtkWidget* widget, gpointer data){
     else snprintf(msg_w, BUFSIZ, "%d", 4);
     printf("send instr %s\n", msg_w);
     
-    pthread_mutex_lock(&shw->mute);
+    pthread_mutex_lock(&shm2->mute);
     printf("client sender_b lock\n");
-    if(shw->written==1){
+    if(shm2->written==1){
         printf("client sender_b wait\n");
-        pthread_cond_wait(&shw->cond_w, &shw->mute);
+        pthread_cond_wait(&shm2->cond_w, &shm2->mute);
     }
-    strcpy(shw->text, msg_w);
-    shw->written=1;
-    pthread_cond_signal(&shw->cond_r);
-    printf("client sender_a notify server lisener\n");
-    pthread_mutex_unlock(&shw->mute);
+    strcpy(shm2->text, msg_w);
+    shm2->written=1;
+    pthread_cond_signal(&shm2->cond_r);
+    printf("client sender_b notify server lisener\n");
+    pthread_mutex_unlock(&shm2->mute);
 }
 
 void gui_destroy(GtkWidget* widget, gpointer data){
@@ -141,42 +141,42 @@ void* gui_lisener(void * arg){
     printf("\n---------------------notify: client can recieve msg\n");
     int x=0, y=0;
     while(1){           
-        pthread_mutex_lock(&shr->mute);
+        pthread_mutex_lock(&shm1->mute);
         printf("client lisener lock\n");
-        if(shr->written==0){ // client lisener bloc, util server writer notify. 
+        if(shm1->written==0){ // client lisener bloc, util server writer notify. 
             printf("client lisener wait\n");
-            pthread_cond_wait(&shr->cond_r, &shr->mute);
+            pthread_cond_wait(&shm1->cond_r, &shm1->mute);
         }
-        size_t len = strlen(shr->text);
+        size_t len = strlen(shm1->text);
         if(len==0){
             printf("msg is empty\n"); continue;
         }
-        printf("msg=%s\n", shr->text);
-        char op = shr->text[0];
+        printf("msg=%s\n", shm1->text);
+        char op = shm1->text[0];
         switch (op) {
         case '0':
             for(int i=0; i<SCREEN_SIZE; i++){
                 for(int j=0; j<SCREEN_SIZE; j++){
                     int index = SCREEN_SIZE*i+j+1;
                     if(index>=len) break;
-                    modify_screen(j, i, shr->text[index]-'0');
+                    modify_screen(j, i, shm1->text[index]-'0');
                 }
             }
         case '1':
-            x=shr->text[1]-'0';
-            y=shr->text[2]-'0';
+            x=shm1->text[1]-'0';
+            y=shm1->text[2]-'0';
             // printf("x=%d, y=%d\n", x, y);
-            modify_screen(x,y,shr->text[3]-'0');
+            modify_screen(x,y,shm1->text[3]-'0');
             break;
         case '2':
             clear_screen(); break;
         default:
             printf("--\n");
         }
-        shr->written = 0;
-        pthread_cond_signal(&shr->cond_w); // finish treatement, notify server writer;
+        shm1->written = 0;
+        pthread_cond_signal(&shm1->cond_w); // finish treatement, notify server writer;
         printf("client lisener notify server writer\n");
-        pthread_mutex_unlock(&shr->mute);
+        pthread_mutex_unlock(&shm1->mute);
     }//while
 }
 
@@ -189,25 +189,25 @@ int main(int argc, char ** argv){
     }
     mypid = getpid();
     server_pid = atoi(argv[1]);
-    shrid = atoi(argv[2]);
-    shwid = atoi(argv[3]);
-    void * vshw = shmat(shwid, 0, 0);
-    if(vshw < 0){
-        perror("shwid shmat failed"); exit(1);
+    shm1id = atoi(argv[2]);
+    shm2id = atoi(argv[3]);
+    void * vshm2 = shmat(shm2id, 0, 0);
+    if(vshm2 < 0){
+        perror("shm2id shmat failed"); exit(1);
     }
-    shw=(struct shared_use_st*)vshw;
-    shw->shmid = shwid;
-    shw->written = 0;
-    printf("shwid=%d, memory attached at %X\n",shwid, shw);
+    shm2=(struct shared_use_st*)vshm2;
+    shm2->shmid = shm2id;
+    shm2->written = 0;
+    printf("shm2id=%d, memory attached at %X\n",shm2id, shm2);
     
-    void * vshr = shmat(shrid, 0, 0);
-    if(vshr < 0){
-        perror("vshr shmat failed"); exit(1);
+    void * vshm1 = shmat(shm1id, 0, 0);
+    if(vshm1 < 0){
+        perror("vshm1 shmat failed"); exit(1);
     }
-    shr=(struct shared_use_st*)vshr;
-    shr->shmid = shrid;
-    shr->written = 0;
-    printf("shrid=%d, memory attached at %X\n",shrid, shr);
+    shm1=(struct shared_use_st*)vshm1;
+    shm1->shmid = shm1id;
+    shm1->written = 0;
+    printf("shm1id=%d, memory attached at %X\n",shm1id, shm1);
 
 
     printf("pid=%d\n", server_pid);
