@@ -13,12 +13,9 @@ Compiler `./mytest/test.ml/` par `make` et exécuter `test.elf`
 On a changé la mécanisme de synchronization dans la version actuelle. On a utilisé shared memory(`shmget, shmat, shmdt, shmctl`) pour IPC (communication entre processus) ainsi que la condition variable (`pthread_cond_t`) et le mutex (`pthread_mutex_t`) pour protéger les données partagées.
 
 #### variable utilisé
-dans le serveur (`sf-regs.c`):\
-`shw` est le mémoire partagé par le client écouteur et le serveur écriture.\
-`shr` est le mémoire partagé par le serveur écouteur et le serveur écriture.\
-dans le client (`gui.c`):\
-`shr` est le mémoire partagé par le client écouteur et le serveur écriture.\
-`shw` est le mémoire partagé par le serveur écouteur et le serveur écriture.\
+`shm1` représente le mémoire partagé par `send_msg` et `gui_lisener`.\
+`shm2` représente le mémoire partagé par `press_a/press_b` et `fun_lisener`
+
 `struct shared_use_st` est défini dans le fichier `./src/byterun/simul/shard.h`.
 ```c
 #define TEXT_SZ 2048
