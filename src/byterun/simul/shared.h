@@ -21,7 +21,9 @@ struct shared_use_st{
 	int shmid;
 	int written;
 	pthread_mutex_t mute;
+	pthread_mutexattr_t mute_atr;
 	pthread_cond_t cond_r;
+	pthread_condattr_t cond_atr;
 	pthread_cond_t cond_w;
 	char text[TEXT_SZ];
 };
