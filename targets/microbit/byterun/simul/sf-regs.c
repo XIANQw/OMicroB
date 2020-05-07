@@ -14,23 +14,23 @@
 pthread_mutex_t mute;
 pthread_t lisener;
 
-void *vshw = NULL, *vshr=NULL;
-struct shared_use_st *shr = NULL, *shw=NULL;
+void *vshm1 = NULL, *vshm2=NULL;
+struct shared_use_st *shm2 = NULL, *shm1=NULL;
 
 
 void* fun_lisener(void * arg){
   while(1){
-    pthread_mutex_lock(&shr->mute);
+    pthread_mutex_lock(&shm2->mute);
     printf("server lisener lock\n");  
-    if(shr->written==0){ // server lisener bloc, until client writer notify
+    if(shm2->written==0){ // server lisener bloc, until client writer notify
       printf("server lisener wait\n");
-      pthread_cond_wait(&shr->cond_r, &shr->mute);
+      pthread_cond_wait(&shm2->cond_r, &shm2->mute);
     }
     
-    if(strlen(shr->text) > 0){
-      printf("recieve %s\n", shr->text);
+    if(strlen(shm2->text) > 0){
+      printf("recieve %s\n", shm2->text);
       pthread_mutex_lock(&mute);
-      switch (shr->text[0]){
+      switch (shm2->text[0]){
       case '1':
         button[0]=1; break;
       case '2':
@@ -43,15 +43,15 @@ void* fun_lisener(void * arg){
         break;
       }
       pthread_mutex_unlock(&mute);
-    } else if (strcmp("EOF",shr->text) == 0){
+    } else if (strcmp("EOF",shm2->text) == 0){
       printf("client quit, stop read\n"); break;   
     } else{
       printf("server: msg is empty\n");
     }
-    shr->written=0;
-    pthread_cond_signal(&shr->cond_w); //notift client writer
+    shm2->written=0;
+    pthread_cond_signal(&shm2->cond_w); //notift client writer
     printf("server lisener notify client writer\n");
-    pthread_mutex_unlock(&shr->mute);
+    pthread_mutex_unlock(&shm2->mute);
   }//while
   printf("---------------------notify：terminate read processus\n");  
   return NULL;
@@ -63,49 +63,21 @@ void simul_init(){
   flag_simul[0]=1;
   
 
-  int shrid = shmget((key_t)1234, sizeof(struct shared_use_st), 0666|IPC_CREAT);
-  if(shrid < 0){
-    perror("shrid shrget fail"); exit(1);
-  }
-  void * vshr = shmat(shrid, 0, 0);
-  if(vshr < 0){
-    perror("vshr shmat failed"); exit(1);
-  }
-  shr=(struct shared_use_st*)vshr;
-  shr->shmid = shrid;
-  shr->written = 0;
-  pthread_mutex_init(&shr->mute, NULL);
-  pthread_cond_init(&shr->cond_r, NULL);
-  pthread_cond_init(&shr->cond_w, NULL);
-  printf("shrid=%d, memory attached at %X\n",shrid, shr);
-
-  int shwid = shmget((key_t)1230, sizeof(struct shared_use_st), 0666|IPC_CREAT);
-  if(shwid < 0){
-    perror("shwget fail"); exit(1);
-  }
-  void * vshw = shmat(shwid, 0, 0);
-  if(vshw < 0){
-    perror("shwid shmat failed"); exit(1);
-  }
-  shw=(struct shared_use_st*)vshw;
-  shw->shmid = shwid;
-  shw->written = 0;
-  pthread_mutex_init(&shw->mute, NULL);
-  pthread_cond_init(&shw->cond_r, NULL);
-  pthread_cond_init(&shw->cond_w, NULL);
-  printf("shwid=%d, memory attached at %X\n",shwid, shw);
-
+  shm1 = create_shm(1234);
+  int shm1id=shm1->shmid;
+  shm2 = create_shm(1230);
+  int shm2id=shm2->shmid;
 
   pid_t child = vfork();
   if(child < 0) exit(0);
   if(child == 0){
     printf("child\n");
-    char pidstr[10], shwidstr[10], shridstr[10];
+    char pidstr[10], shm1idstr[10], shm2idstr[10];
     snprintf(pidstr, 10, "%d", getppid());
-    snprintf(shwidstr, 10, "%d", shwid);
-    snprintf(shridstr, 10, "%d", shrid);
+    snprintf(shm1idstr, 10, "%d", shm1id);
+    snprintf(shm2idstr, 10, "%d", shm2id);
     printf("father=%d\n", getppid());
-    char *const argv[] = {"gui", pidstr, shwidstr, shridstr, NULL};
+    char *const argv[] = {"gui", pidstr, shm1idstr, shm2idstr, NULL};
     int res = execvp("/tmp/gui",argv);
     printf("res=%d\n", res);
   }else{
@@ -120,18 +92,18 @@ void simul_init(){
 
 void send_msg(char * str){
   //pipe_write exist or not
-  pthread_mutex_lock(&shw->mute);
+  pthread_mutex_lock(&shm1->mute);
   printf("server sender lock\n");
-  if(shw->written==1) { // server writer bloc, util client lisener notify
+  if(shm1->written==1) { // server writer bloc, util client lisener notify
     printf("server sender wait\n");
-    pthread_cond_wait(&shw->cond_w, &shw->mute);
+    pthread_cond_wait(&shm1->cond_w, &shm1->mute);
   }
-  strcpy(shw->text, str);
+  strcpy(shm1->text, str);
   printf("send: len=%ld \n%s\n", strlen(str), str);
-  shw->written = 1;
-  pthread_cond_signal(&shw->cond_r); // notify client lisener
+  shm1->written = 1;
+  pthread_cond_signal(&shm1->cond_r); // notify client lisener
   printf("server sender notify client lisener\n");
-  pthread_mutex_unlock(&shw->mute);
+  pthread_mutex_unlock(&shm1->mute);
 }
 
 
