@@ -84,6 +84,9 @@ struct shared_use_st* create_shm(key_t id){
     shmdata=(struct shared_use_st*)shm;
     shmdata->shmid = shmid;
     shmdata->written = 0;
+    pthread_mutex_init(&shmdata->mute, NULL);
+    pthread_cond_init(&shmdata->cond_r, NULL);
+    pthread_cond_init(&shmdata->cond_w, NULL);
     printf("id=%d, memory attached at %X\n",shmid, shmdata);
     return shmdata;
 }

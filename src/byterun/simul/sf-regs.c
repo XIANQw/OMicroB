@@ -659,38 +659,10 @@ void simul_init(){
   flag_simul[0]=1;
   
 
-  int shm2id = shmget((key_t)1234, sizeof(struct shared_use_st), 0666|IPC_CREAT);
-  if(shm2id < 0){
-    perror("shm2id shm2get fail"); exit(1);
-  }
-  void * vshm2 = shmat(shm2id, 0, 0);
-  if(vshm2 < 0){
-    perror("vshm2 shmat failed"); exit(1);
-  }
-  shm2=(struct shared_use_st*)vshm2;
-  shm2->shmid = shm2id;
-  shm2->written = 0;
-  pthread_mutex_init(&shm2->mute, NULL);
-  pthread_cond_init(&shm2->cond_r, NULL);
-  pthread_cond_init(&shm2->cond_w, NULL);
-  printf("shm2id=%d, memory attached at %X\n",shm2id, shm2);
-
-  int shm1id = shmget((key_t)1230, sizeof(struct shared_use_st), 0666|IPC_CREAT);
-  if(shm1id < 0){
-    perror("shm1get fail"); exit(1);
-  }
-  void * vshm1 = shmat(shm1id, 0, 0);
-  if(vshm1 < 0){
-    perror("shm1id shmat failed"); exit(1);
-  }
-  shm1=(struct shared_use_st*)vshm1;
-  shm1->shmid = shm1id;
-  shm1->written = 0;
-  pthread_mutex_init(&shm1->mute, NULL);
-  pthread_cond_init(&shm1->cond_r, NULL);
-  pthread_cond_init(&shm1->cond_w, NULL);
-  printf("shm1id=%d, memory attached at %X\n",shm1id, shm1);
-
+  shm1 = create_shm(1234);
+  int shm1id=shm1->shmid;
+  shm2 = create_shm(1230);
+  int shm2id=shm2->shmid;
 
   pid_t child = vfork();
   if(child < 0) exit(0);
