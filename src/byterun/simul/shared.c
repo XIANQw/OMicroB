@@ -78,7 +78,7 @@ struct shared_use_st* create_shm(key_t id){
       perror("shmget fail"); exit(1);
     }
     void * shm = shmat(shmid, 0, 0);
-    if(shm < 0){
+    if(shm < (void *)0){
       perror("shmat failed"); exit(1);
     }
     shmdata=(struct shared_use_st*)shm;
