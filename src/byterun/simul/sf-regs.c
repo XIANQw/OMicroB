@@ -655,7 +655,6 @@ void* fun_lisener(void * arg){
 
 
 void simul_init(){
-  
   if(flag_simul[0]) return;
   flag_simul[0]=1;
   

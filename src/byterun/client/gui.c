@@ -88,53 +88,6 @@ void gui_destroy(GtkWidget* widget, gpointer data){
     kill(mypid, SIGKILL);
 }
 
-// int gui(int argc, char **argv){
-//     // window > box > table + buttonbox > buttons
-
-//     gtk_init(&argc, &argv);
-//     window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-
-//     gtk_window_set_title(GTK_WINDOW(window), "simulator");
-    
-//     g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gui_destroy), NULL);
-//     gtk_container_set_border_width(GTK_CONTAINER(window), 150);
-    
-//     box = gtk_vbox_new(FALSE, 3);
-//     gtk_container_add(GTK_CONTAINER(window), box);
-
-//     table = gtk_table_new(5, 5, TRUE);
-//     for(int i=0; i<5; i++){
-//         for(int j=0; j<5; j++){
-//             button = gtk_button_new_with_label("");
-//             screen[i][j] = button;
-//             gtk_widget_set_sensitive(button, FALSE);
-//             gtk_table_attach_defaults(GTK_TABLE(table), button, i, i+1, j, j+1);
-//             gtk_widget_show(button);
-//         }
-//     }
-//     gtk_widget_show(table);
-
-//     button_box = gtk_hbutton_box_new();
-//     gtk_box_set_spacing(GTK_BOX(button_box), 5);
-//     gtk_box_pack_start(GTK_BOX(box), table, FALSE, FALSE, 3);
-//     gtk_box_pack_start(GTK_BOX(box), button_box, FALSE, FALSE, 3);
-
-//     button = gtk_button_new_with_label("A");
-//     g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(press_a), NULL);
-//     gtk_box_pack_start(GTK_BOX(button_box), button, FALSE, FALSE, 0);
-//     gtk_widget_show(button);
-    
-//     button = gtk_button_new_with_label("B");
-//     g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(press_b), NULL);
-//     gtk_box_pack_start(GTK_BOX(button_box), button, FALSE, FALSE, 0);
-//     gtk_widget_show(button);
-
-//     gtk_widget_show(button_box);
-//     gtk_widget_show(box);
-//     gtk_widget_show(window);
-//     gtk_main();
-//     return 0;
-// }
 
 void* gui_lisener(void * arg){
     printf("read processus start\n");
@@ -156,23 +109,35 @@ void* gui_lisener(void * arg){
         char op = shm1->text[0];
         switch (op) {
         case '0':
+            gdk_threads_enter();
             for(int i=0; i<SCREEN_SIZE; i++){
                 for(int j=0; j<SCREEN_SIZE; j++){
                     int index = SCREEN_SIZE*i+j+1;
-                    if(index>=len) break;
+                    if(index>=len) {
+                        gdk_threads_leave();
+                        break;
+                    }
                     modify_screen(j, i, shm1->text[index]-'0');
                 }
             }
+            gdk_threads_leave();
+            break;
         case '1':
             x=shm1->text[1]-'0';
             y=shm1->text[2]-'0';
             // printf("x=%d, y=%d\n", x, y);
+            gdk_threads_enter();
             modify_screen(x,y,shm1->text[3]-'0');
+            gdk_threads_leave();
             break;
         case '2':
-            clear_screen(); break;
+            gdk_threads_enter();
+            clear_screen();
+            gdk_threads_leave();
+            break;
         default:
             printf("--\n");
+            break;
         }
         shm1->written = 0;
         pthread_cond_signal(&shm1->cond_w); // finish treatement, notify server writer;
@@ -180,18 +145,12 @@ void* gui_lisener(void * arg){
         pthread_mutex_unlock(&shm1->mute);
     }//while
 }
-static gboolean delete_event(GtkWidget * widget, GdkEvent * event,
-		gpointer data) {
+static gboolean delete_event(GtkWidget * widget, GdkEvent * event, gpointer data) {
 	gtk_main_quit();
 	return FALSE;
 }
-int gui_test(int argc, char *argv[]) {
-	
-	return 0;
-}
 
 int main(int argc, char ** argv){
-   
     printf("Program start\n");
     if(argc < 2){ 
         printf("argc=%d", argc);
@@ -221,19 +180,19 @@ int main(int argc, char ** argv){
 
     
     printf("pid=%d\n", server_pid);
-     pthread_t pgui;
-    // pthread_create(&pgui, NULL, (void *)&gui_test, NULL);
    
 
     //---------gtk start
-    gtk_init(&argc, &argv);
-    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
+    if (!g_thread_supported()) g_thread_init(NULL);
+    gdk_threads_init();
+
+    gtk_init(&argc, &argv);
+
+    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "simulator");
-    
     g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gui_destroy), NULL);
     gtk_container_set_border_width(GTK_CONTAINER(window), 150);
-    
     box = gtk_vbox_new(FALSE, 3);
     gtk_container_add(GTK_CONTAINER(window), box);
 
@@ -267,21 +226,11 @@ int main(int argc, char ** argv){
     gtk_widget_show(button_box);
     gtk_widget_show(box);
     gtk_widget_show(window);
-    //gtk_main();
-
-    //-----------gtk end
-    
-    // printf("client start communication\n");
-    // pthread_t plisener;
-    // pthread_create(&plisener, NULL, (void *)&gui_lisener, NULL);
-    // pthread_join(plisener, NULL);
-    //
     
     g_thread_create((GThreadFunc)gui_lisener,NULL,FALSE,NULL);
  
     gdk_threads_enter();
     gtk_main();
     gdk_threads_leave();
-    //
     return 0;
 }
