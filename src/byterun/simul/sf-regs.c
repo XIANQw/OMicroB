@@ -708,6 +708,8 @@ void microbit_print_string(char *str) {
   send_msg(str);
 }
 
+
+
 void microbit_print_int(int i) {
   simul_init();
   snprintf(msg_w, BUF_SIZE, "%d", i);
