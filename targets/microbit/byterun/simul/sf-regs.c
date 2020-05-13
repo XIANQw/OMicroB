@@ -112,6 +112,8 @@ void microbit_print_string(char *str) {
   send_msg(str);
 }
 
+
+
 void microbit_print_int(int i) {
   simul_init();
   snprintf(msg_w, BUF_SIZE, "%d", i);
@@ -206,15 +208,71 @@ int microbit_millis() {
 }
 
 /******************************************************************************/
+#include"chs_tab.h"
+
+char ch_tab[5];
+
+
+char * getCharTab(char c,char *chs_tab)
+{   
+    memset(ch_tab,0,5*sizeof(char));
+    int offset;
+    offset = (int)c*5;            /*compute the offset by ascii code*/
+    //printf("%d",offset);
+    for(int i =0;i<5;i++){
+        ch_tab[i] = chs_tab[offset+i];
+    
+    }
+    return ch_tab;
+}
+
+
+void print_char(char *ch_tab){   //*******for test the char corret********///
+
+    int i,j,a;
+	for(i=0;i<5;i++){
+
+	    for(j=0;j<8;j++)
+	        {
+				if((ch_tab[i]&(1 << j)) == (1 << j))
+					printf("*");
+				else
+					printf("-");
+			}printf("\n");   
+        }printf("\n");
+}
+
+/*******************************************************************************/
 
 void microbit_serial_write(char c) {
   simul_init();
-  if(buf_ptr>BUF_SIZE) {
-    perror("buffer pointer > buffer size");
-    exit(0);
+  // if(buf_ptr>BUF_SIZE) {
+  //   perror("buffer pointer > buffer size");
+  //   exit(0);
+  // }
+  printf("serial write %c\n", c);
+  // msg_w[buf_ptr++] = c;
+/*********************************/
+//*******for test the char corret********///
+  
+   
+  // print_char(getCharTab(AscC,chs_tab));
+
+/*********************************/
+  char AscC  = c;
+  getCharTab(AscC,chs_tab);
+  char tmp[30];
+  for(int y = 0; y < 5; y++) {
+    for(int x = 0; x < 5; x++) {
+      if ((ch_tab[y]&(1 << x)) == (1 << x)) tmp[5*y+x] = '1';
+      else tmp[5*y+x] = '0';
+    }
   }
-  // printf("serial write %c\n", c);
-  msg_w[buf_ptr++] = c;
+  tmp[25] = '\0';
+  strcpy(image, tmp);
+  snprintf(msg_w, BUF_SIZE, "%d%s", PRINT_IMAGE, tmp);
+  send_msg(msg_w);
+  sleep(2);
 }
 
 char microbit_serial_read() {
