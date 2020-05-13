@@ -91,10 +91,10 @@ On a trouvé GUI peut s'exécuter uniquement dans main thread.Au lieu d'utiliser
 #### Réalisation print_string
 Microbit est de écran 5x5.Donc il faut transfert chaque caractère en forme de 5x5 pixel.
 Par exemple un 'A',il s'agit en forme de 
- ***             01110000
-*   *         10001000
-*****   ->     11111000
-*   *         10001000
-*   *         10001000
+/ ***  /         01110000
+/*   */          10001000
+/*****/  ->   11111000
+/*   */         10001000
+/*   */         10001000
 Donc,on a utilisé 2 chiffres hexadécimal par ligne et 5 lignes pour stocker l'information un caractère.
 En suite,on calcule décalage par Ascii code du caractère et obtenir la tableau    { 14, 9, 5, 1, 14} par exemple ,et lui transfert en écran de GUI.
