@@ -1,13 +1,13 @@
 /******************************************************************************/
 /******************************************************************************/
 /******************************************************************************/
-
 #include <signal.h>
 #include <pthread.h>
 #include <sys/shm.h>
 #include "../client/protocol.h"
 #include "shared.h"
 #include "sf-regs.h"
+#include"chs_tab.h"
 
 #define BUF_SIZE 50
 
@@ -21,14 +21,14 @@ struct shared_use_st *shm2 = NULL, *shm1=NULL;
 void* fun_lisener(void * arg){
   while(1){
     pthread_mutex_lock(&shm2->mute);
-    printf("server lisener lock\n");  
+    // printf("server lisener lock\n");  
     if(shm2->written==0){ // server lisener bloc, until client writer notify
-      printf("server lisener wait\n");
+      // printf("server lisener wait\n");
       pthread_cond_wait(&shm2->cond_r, &shm2->mute);
     }
     
     if(strlen(shm2->text) > 0){
-      printf("recieve %s\n", shm2->text);
+      printf("s:%s\n", shm2->text);
       pthread_mutex_lock(&mute);
       switch (shm2->text[0]){
       case '1':
@@ -44,17 +44,15 @@ void* fun_lisener(void * arg){
       }
       pthread_mutex_unlock(&mute);
     } else if (strcmp("EOF",shm2->text) == 0){
-      printf("client quit, stop read\n"); break;   
+      break;   
     } else{
-      printf("server: msg is empty\n");
+      printf("s:empty\n");
     }
     shm2->written=0;
     pthread_cond_signal(&shm2->cond_w); //notift client writer
-    printf("server lisener notify client writer\n");
+    // printf("server lisener notify client writer\n");
     pthread_mutex_unlock(&shm2->mute);
-  }//while
-  printf("---------------------notify：terminate read processus\n");  
-  return NULL;
+  }return NULL;
 }
 
 
@@ -93,59 +91,69 @@ void simul_init(){
 void send_msg(char * str){
   //pipe_write exist or not
   pthread_mutex_lock(&shm1->mute);
-  printf("server sender lock\n");
+  // printf("server sender lock\n");
   if(shm1->written==1) { // server writer bloc, util client lisener notify
-    printf("server sender wait\n");
+    // printf("server sender wait\n");
     pthread_cond_wait(&shm1->cond_w, &shm1->mute);
   }
   strcpy(shm1->text, str);
-  printf("send: len=%ld \n%s\n", strlen(str), str);
+  printf("s->c:%s\n", str);
   shm1->written = 1;
   pthread_cond_signal(&shm1->cond_r); // notify client lisener
-  printf("server sender notify client lisener\n");
+  // printf("server sender notify client lisener\n");
   pthread_mutex_unlock(&shm1->mute);
 }
 
 
-void microbit_print_string(char *str) {
-  simul_init();
-  send_msg(str);
+void print_char(char AscC){
+  getCharTab(AscC,chs_tab);
+  char tmp[30];
+  for(int y = 0; y < 5; y++) {
+    for(int x = 0; x < 5; x++) {
+      if ((ch_tab[y]&(1 << x)) == (1 << x)) microbit_write_pixel(x, y, 1);
+      else microbit_write_pixel(x, y, 0);
+    }
+  }
 }
 
-
+void microbit_print_string(char *str) {
+  simul_init();
+  while(*str!='\0'){
+    print_char(*str++);
+    delay(500);
+  }
+}
 
 void microbit_print_int(int i) {
   simul_init();
   snprintf(msg_w, BUF_SIZE, "%d", i);
-  send_msg(msg_w);
+  microbit_print_string(msg_w);
 }
 
 void microbit_write_pixel(int x, int y, int l) {
   simul_init();
-  if((l==0 && image[6*y+x]==' ') || (l!=0 && image[6*y+x]=='.')) return;
+  if(pixels[5*y+x]==l) return;
   if(l==0){
-    image[6*y+x] = ' ';
-    snprintf(msg_w, BUF_SIZE, "%d%d%d%d", SET_PIXEL, x, y, 0);
+    pixels[5*y+x] = 0;
   } else{ 
-    image[6*y+x] = '.';
-    snprintf(msg_w, BUF_SIZE, "%d%d%d%d", SET_PIXEL, x, y, 1);
+    pixels[5*y+x] = l;
   }
+  snprintf(msg_w, BUF_SIZE, "%d%d%d%d", SET_PIXEL, x, y, l);
   send_msg(msg_w);
 }
 
 void microbit_print_image(char *str) {
   simul_init();
-  char tmp[30];
   for(int y = 0; y < 5; y++) {
     for(int x = 0; x < 5; x++) {
-      if (str[y*5+x]==0) tmp[5*y+x] = '0';
-      else tmp[5*y+x] = '1';
+      if (str[y*5+x]==0){ 
+        microbit_write_pixel(x, y, 0);
+      }
+      else{
+        microbit_write_pixel(x, y , 1);
+      }
     }
   }
-  tmp[25] = '\0';
-  strcpy(image, tmp);
-  snprintf(msg_w, BUF_SIZE, "%d%s", PRINT_IMAGE, tmp);
-  send_msg(msg_w);
 }
 
 void microbit_clear_screen() {
@@ -208,82 +216,47 @@ int microbit_millis() {
 }
 
 /******************************************************************************/
-#include"chs_tab.h"
 
-char ch_tab[5];
-
-
-char * getCharTab(char c,char *chs_tab)
-{   
+void getCharTab(char c,char *chs_tab){   
     memset(ch_tab,0,5*sizeof(char));
     int offset;
     offset = (int)c*5;            /*compute the offset by ascii code*/
     //printf("%d",offset);
     for(int i =0;i<5;i++){
         ch_tab[i] = chs_tab[offset+i];
-    
     }
-    return ch_tab;
 }
 
-
-void print_char(char *ch_tab){   //*******for test the char corret********///
-
-    int i,j,a;
-	for(i=0;i<5;i++){
-
-	    for(j=0;j<8;j++)
-	        {
-				if((ch_tab[i]&(1 << j)) == (1 << j))
-					printf("*");
-				else
-					printf("-");
-			}printf("\n");   
-        }printf("\n");
-}
 
 /*******************************************************************************/
 
+char buffer[BUF_SIZE];
+int buf_ptr, read_ptr;
+
 void microbit_serial_write(char c) {
   simul_init();
-  // if(buf_ptr>BUF_SIZE) {
-  //   perror("buffer pointer > buffer size");
-  //   exit(0);
-  // }
-  printf("serial write %c\n", c);
-  // msg_w[buf_ptr++] = c;
-/*********************************/
-//*******for test the char corret********///
-  
-   
-  // print_char(getCharTab(AscC,chs_tab));
-
-/*********************************/
-  char AscC  = c;
-  getCharTab(AscC,chs_tab);
-  char tmp[30];
-  for(int y = 0; y < 5; y++) {
-    for(int x = 0; x < 5; x++) {
-      if ((ch_tab[y]&(1 << x)) == (1 << x)) tmp[5*y+x] = '1';
-      else tmp[5*y+x] = '0';
-    }
+  if(buf_ptr>BUF_SIZE) {
+    perror("buffer pointer > buffer size");
+    exit(0);
   }
-  tmp[25] = '\0';
-  strcpy(image, tmp);
-  snprintf(msg_w, BUF_SIZE, "%d%s", PRINT_IMAGE, tmp);
-  send_msg(msg_w);
-  sleep(2);
+  buffer[buf_ptr++] = c;
 }
 
 char microbit_serial_read() {
   simul_init();
-  if(ptr_head == buf_ptr){
+  if(read_ptr == buf_ptr){
     perror("head pointer > buffer ptr");
     exit(0);
   }
-  char res = msg_w[ptr_head++];
-  if(ptr_head == buf_ptr){
-    buf_ptr=0; ptr_head=0;
+  char res = buffer[read_ptr++];
+
+  /*********************************/
+  /*******for test the char corret********/
+  // print_char(getCharTab(AscC,chs_tab));
+  /*********************************/  
+
+  if(read_ptr == buf_ptr){
+    buf_ptr=0; read_ptr=0;
   }
   return res;
 }

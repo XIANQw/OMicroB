@@ -94,6 +94,7 @@ char avr_serial_read();
 #define PIN16 16
 
 #define BUF_SIZE 50
+#define NB_PIXEL 25
 
 char ch_tab[5];
 
@@ -101,7 +102,7 @@ char msg_r[BUF_SIZE];
 char msg_w[BUF_SIZE];
 bool button[2];
 bool flag_simul[1];
-char image[30];
+int pixels[NB_PIXEL];
 bool pins_val[20];
 bool pins_mode[20];
 

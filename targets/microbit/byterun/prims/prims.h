@@ -21,7 +21,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h> 
- 
+
+
+
 #define PIN0 0
 #define PIN1 1
 #define PIN2 2
@@ -30,19 +32,27 @@
 #define PIN16 16
 
 #define BUF_SIZE 50
+#define NB_PIXEL 25
+
+char ch_tab[5];
 
 char msg_r[BUF_SIZE];
 char msg_w[BUF_SIZE];
-int buf_ptr, ptr_head;
 bool button[2];
 bool flag_simul[1];
-char image[30];
+int pixels[NB_PIXEL];
 bool pins_val[20];
 bool pins_mode[20];
 
 
 void simul_init();
 void send_msg(char * str);
+void getCharTab(char, char*);
+void print_char(char);
+
+
+/******************************************************************************/
+
 void microbit_pin_mode(int p, int m);
 void microbit_digital_write(int p, int l);
 int microbit_digital_read(int p);

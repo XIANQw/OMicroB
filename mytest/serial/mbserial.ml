@@ -1,4 +1,4 @@
-Open Screen
+open Screen
 let _ =
   print_int 42;
   Serial.init ();
