@@ -20,13 +20,14 @@ On a changé la mécanisme de synchronization dans la version actuelle. On a uti
 ```c
 #define TEXT_SZ 2048
 struct shared_use_st{
-  int shmid; //shared memory's id
-  // pour vérifier s'il y a msg qui est écrit dans le mémoire
-  int written;
-  pthread_mutex_t mute;
-  pthread_cond_t cond_r;
-  pthread_cond_t cond_w;
-  char text[TEXT_SZ];
+	int shmid;
+	int written;
+	pthread_mutex_t mute;
+	pthread_mutexattr_t mute_atr;
+	pthread_cond_t cond_r;
+	pthread_condattr_t cond_atr;
+	pthread_cond_t cond_w;
+	char text[TEXT_SZ];
 };
 ```
 
@@ -78,7 +79,7 @@ Dans le prochain tour de bloc, le serveur se bloque aussi, donc dead lock se pro
 ![résultat](https://github.com/XIANQw/OMicroB/blob/microbit/doc/resultat.png)
 
 #### Problème résolu No.1
-On a initialisé les attributs des condition variable et des mutex.Désomais,le programme fonctionne bien en Linux.
+On a initialisé les attributs des condition variable et des mutex. Désomais,le programme fonctionne bien en Linux.
 
 #### Problème à résoudre No.2
 Les threads n'arrive pas toujours se reveillent en Mac OS comme le problème 1,et le programme s'écrasé par les deux bug suivan:
@@ -86,11 +87,11 @@ Les threads n'arrive pas toujours se reveillent en Mac OS comme le problème 1,e
 ![bug2](https://github.com/XIANQw/OMicroB/blob/microbit/doc/bug2.png)
 
 #### Problème résolu No.2
-On a trouvé GUI peut s'exécuter uniquement dans main thread.Au lieu d'utiliser les P_thread pour main thread et les child threads,on l'en a remplacé par les Gtk_thread. Mais aussi ,on a utilisé     gdk_threads_enter() et  gdk_threads_leave() pour protéger chaque modification par les threads dans GUI.
+On a trouvé GUI peut s'exécuter uniquement dans main thread. Au lieu d'utiliser les p_thread pour main thread et les child threads,on l'en a remplacé par les Gtk_thread. Mais aussi ,on a utilisé     gdk_threads_enter() et  gdk_threads_leave() pour protéger chaque modification par les threads dans GUI.
 
 #### Réalisation print_string
 Microbit est de écran 5x5.Donc il faut transfert chaque caractère en forme de 5x5 pixel.
-Par exemple un 'A',il s'agit en forme de 
+Par exemple un 'A',il s'agit en forme de
 / ***  /         01110000
 /*   */          10001000
 /*****/  ->   11111000
