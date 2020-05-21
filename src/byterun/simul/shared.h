@@ -25,7 +25,7 @@ struct shared_use_st{
 	pthread_cond_t cond_r;
 	pthread_condattr_t cond_atr;
 	pthread_cond_t cond_w;
-	char text[TEXT_SZ];
+	int code;
 };
 
 void p_lock();

@@ -620,34 +620,26 @@ void* fun_lisener(void * arg){
     pthread_mutex_lock(&shm2->mute);
     // printf("server lisener lock\n");  
     if(shm2->written==0){ // server lisener bloc, until client writer notify
-      // printf("server lisener wait\n");
       pthread_cond_wait(&shm2->cond_r, &shm2->mute);
     }
-    
-    if(strlen(shm2->text) > 0){
-      printf("s:%s\n", shm2->text);
-      pthread_mutex_lock(&mute);
-      switch (shm2->text[0]){
-      case '1':
-        button[0]=1; break;
-      case '2':
-        button[0]=0; break;
-      case '3':
-        button[1]=1; break;
-      case '4':
-        button[1]=0; break;
-      default:
-        break;
-      }
-      pthread_mutex_unlock(&mute);
-    } else if (strcmp("EOF",shm2->text) == 0){
-      break;   
-    } else{
-      printf("s:empty\n");
+    int code=shm2->code;
+    pthread_mutex_lock(&mute);
+    switch (shm2->code){
+    case 1:
+      button[0]=1; break;
+    case 2:
+      button[0]=0; break;
+    case 3:
+      button[1]=1; break;
+    case 4:
+      button[1]=0; break;
+    default:
+      break;
     }
+    pthread_mutex_unlock(&mute);
+
     shm2->written=0;
     pthread_cond_signal(&shm2->cond_w); //notift client writer
-    // printf("server lisener notify client writer\n");
     pthread_mutex_unlock(&shm2->mute);
   }return NULL;
 }
@@ -656,7 +648,6 @@ void* fun_lisener(void * arg){
 void simul_init(){
   if(flag_simul[0]) return;
   flag_simul[0]=1;
-  
 
   shm1 = create_shm(1234);
   int shm1id=shm1->shmid;
@@ -685,26 +676,21 @@ void simul_init(){
   }
 }
 
-void send_msg(char * str){
+void send_msg(int code){
   //pipe_write exist or not
   pthread_mutex_lock(&shm1->mute);
-  // printf("server sender lock\n");
   if(shm1->written==1) { // server writer bloc, util client lisener notify
-    // printf("server sender wait\n");
     pthread_cond_wait(&shm1->cond_w, &shm1->mute);
   }
-  strcpy(shm1->text, str);
-  printf("s->c:%s\n", str);
+  shm1->code=code;
   shm1->written = 1;
   pthread_cond_signal(&shm1->cond_r); // notify client lisener
-  // printf("server sender notify client lisener\n");
   pthread_mutex_unlock(&shm1->mute);
 }
 
 
 void print_char(char AscC){
   getCharTab(AscC,chs_tab);
-  char tmp[30];
   for(int y = 0; y < 5; y++) {
     for(int x = 0; x < 5; x++) {
       if ((ch_tab[y]&(1 << x)) == (1 << x)) microbit_write_pixel(x, y, 1);
@@ -727,16 +713,20 @@ void microbit_print_int(int i) {
   microbit_print_string(msg_w);
 }
 
+//   inst      x       y    v  
+// 31----25 24---13 12---1  0 
 void microbit_write_pixel(int x, int y, int l) {
   simul_init();
+  int v=0;
   if(pixels[5*y+x]==l) return;
   if(l==0){
     pixels[5*y+x] = 0;
-  } else{ 
+  } else { 
     pixels[5*y+x] = l;
+    v=1;
   }
-  snprintf(msg_w, BUF_SIZE, "%d%d%d%d", SET_PIXEL, x, y, l);
-  send_msg(msg_w);
+  int code = (SET_PIXEL << 25) | (x << 13) | (y << 1) | v;
+  send_msg(code);
 }
 
 void microbit_print_image(char *str) {
@@ -755,7 +745,8 @@ void microbit_print_image(char *str) {
 
 void microbit_clear_screen() {
   simul_init();
-  snprintf(msg_w, BUF_SIZE, "%d", CLEAR_SCREEN);
+  int code = CLEAR_SCREEN << 24;
+  send_msg(code);
 }
 
 int microbit_button_is_pressed(int b) {
@@ -776,20 +767,26 @@ void microbit_pin_mode(int p, int m) {
   pins_mode[p] = m;
   if(m == 0) snprintf(msg_w, BUF_SIZE, "Setting PIN%d to INPUT", p);
   else snprintf(msg_w, BUF_SIZE, "Setting PIN%d to OUTPUT", p);
-  send_msg(msg_w);
+  // send_msg(msg_w);
 }
 
+//   inst   PIN   v  
+// 15----9 8---1  0 
 void microbit_digital_write(int p, int l) {
   simul_init();
   pins_val[p] = l;
-  snprintf(msg_w, BUF_SIZE, "Writing value %d to pin %d", l, p);
-  send_msg(msg_w);
+  int v = l==0?0:1;
+  int code = (DIGITAL_WRITE << 9) | (p << 1) | v; 
+  send_msg(code);
 }
 
+//   inst    PIN     v  
+// 31----25 24---17 16--0
 void microbit_analog_write(int p, int l) {
   simul_init();
-  printf("Writing value %d to pin %d", l, p);
+  int code = (ANALOG_WRITE<<25) | (p << 17) | (l & 0b11111111111111111);
   pins_val[p] = l;
+  send_msg(code);
 }
 
 int microbit_analog_read(int p) {

@@ -108,7 +108,7 @@ bool pins_mode[20];
 
 
 void simul_init();
-void send_msg(char * str);
+void send_msg(int code);
 void getCharTab(char, char*);
 void print_char(char);
 

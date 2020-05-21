@@ -25,7 +25,6 @@ GtkWidget* button; // buttons
 
 GtkWidget* screen[SCREEN_SIZE][SCREEN_SIZE];
 int bval[2];
-char msg_w[BUFSIZ],msg_r[BUFSIZ];
 pid_t server_pid=0, mypid=0;
 void *vshm1 = NULL, *vshm2=NULL;
 struct shared_use_st *shm1, *shm2;
@@ -45,33 +44,29 @@ void clear_screen(){
     }
 }
 
-void send_msg(char* str){
+void send_msg(int code){
     pthread_mutex_lock(&shm2->mute);
-    // printf("client sender_a lock\n");
     if(shm2->written==1){ // client writer wait, util server lisener notify
-        // printf("client sender_a wait\n");
         pthread_cond_wait(&shm2->cond_w, &shm2->mute);
     }
-    printf("c->s:%s\n", str);
-    strcpy(shm2->text, str);
     shm2->written=1;
+    shm2->code=code;
     pthread_cond_signal(&shm2->cond_r); //notify server lisener
-    // printf("client sender_a notify server lisener\n");
     pthread_mutex_unlock(&shm2->mute);
 }
 
 void press_a(GtkWidget* widget, gpointer data){
-    bval[0]= 1-bval[0];
-    if(bval[0]) snprintf(msg_w, BUFSIZ, "%d", 1);
-    else snprintf(msg_w, BUFSIZ, "%d", 2);
-    send_msg(msg_w);
+    bval[0]= 1-bval[0]; int code=0;
+    if(bval[0]) code=1;
+    else code=2;
+    send_msg(code);
 }
 
 void press_b(GtkWidget* widget, gpointer data){
-    bval[1]= 1-bval[1];
-    if(bval[1]) snprintf(msg_w, BUFSIZ, "%d", 3);
-    else snprintf(msg_w, BUFSIZ, "%d", 4);
-    send_msg(msg_w);
+    bval[1]= 1-bval[1]; int code=0;
+    if(bval[1]) code=3;
+    else code=4;
+    send_msg(code);
 }
 
 void gui_destroy(GtkWidget* widget, gpointer data){
@@ -84,56 +79,36 @@ void gui_destroy(GtkWidget* widget, gpointer data){
 void* gui_lisener(void * arg){
     printf("read processus start\n");
     printf("\n---------------------notify: client can recieve msg\n");
-    int x=0, y=0;
+    int x=0, y=0, v=0;
     while(1){           
         pthread_mutex_lock(&shm1->mute);
         // printf("client lisener lock\n");
         if(shm1->written==0){ // client lisener bloc, util server writer notify. 
-            // printf("client lisener wait\n");
             pthread_cond_wait(&shm1->cond_r, &shm1->mute);
         }
-        size_t len = strlen(shm1->text);
-        if(len==0){
-            printf("c:empty\n"); continue;
-        }
-        printf("c:%s\n", shm1->text);
-          
-        char op = shm1->text[0];
+        
+        // printf("c:%d\n", shm1->code);
+        int code = shm1->code;
+        char op = code >> 25;
         switch (op) {
-        case '0':
+        case 1:
+            v = code & 0b1; 
+            y = (code >> 1) & 0b111111111111;
+            x = (code >> 13) & 0b111111111111;
             gdk_threads_enter();
-            for(int i=0; i<SCREEN_SIZE; i++){
-                for(int j=0; j<SCREEN_SIZE; j++){
-                    int index = SCREEN_SIZE*i+j+1;
-                    if(index>=len) {
-                        gdk_threads_leave();
-                        break;
-                    }
-                    modify_screen(j, i, shm1->text[index]-'0');
-                }
-            }
+            modify_screen(x,y,v);
             gdk_threads_leave();
             break;
-        case '1':
-            x=shm1->text[1]-'0';
-            y=shm1->text[2]-'0';
-            // printf("x=%d, y=%d\n", x, y);
-            gdk_threads_enter();
-            modify_screen(x,y,shm1->text[3]-'0');
-            gdk_threads_leave();
-            break;
-        case '2':
+        case 2:
             gdk_threads_enter();
             clear_screen();
             gdk_threads_leave();
             break;
         default:
-            printf("--\n");
             break;
         }
         shm1->written = 0;
         pthread_cond_signal(&shm1->cond_w); // finish treatement, notify server writer;
-        // printf("client lisener notify server writer\n");
         pthread_mutex_unlock(&shm1->mute);
     }//while
 }

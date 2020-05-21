@@ -2,3 +2,5 @@
 avr/
 pic32/
 microbit/
+*.arm_elf
+*.arm_o
