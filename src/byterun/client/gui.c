@@ -17,13 +17,6 @@
 #define SCREEN_SIZE 5
 void shm_init();
 
-
-GtkWidget* window; // main window
-GtkWidget* button_box; // button_box
-GtkWidget* box;
-GtkWidget* table;
-GtkWidget* button; // buttons
-
 GtkWidget* screen[SCREEN_SIZE][SCREEN_SIZE];
 int bval[2];
 pid_t server_pid=0, mypid=0;
@@ -142,6 +135,50 @@ inline void shm_init(){
     printf("shm1id=%d, memory attached at %p\n",shm1id, shm1);
 }
 
+
+GtkWidget* create_grid(int col, int row){
+    GtkWidget* grid, *button;
+    grid = gtk_grid_new();
+    for(int i=0; i<row; i++){
+        for(int j=0; j<col; j++){
+            button = gtk_button_new_with_label("");
+            screen[i][j] = button;
+            gtk_widget_set_sensitive(button, FALSE);
+            gtk_grid_attach(GTK_GRID(grid), button, i, j, 1, 1);
+        }
+    }
+    return grid;
+}
+
+GtkWidget* create_UI(){
+    GtkWidget *window, *button_box, *button;
+
+    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(window), "simulator");
+    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gui_destroy), NULL);
+    gtk_container_set_border_width(GTK_CONTAINER(window), 150);
+    
+    GtkWidget* box=gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
+    gtk_container_add(GTK_CONTAINER(window), box);
+    GtkWidget* grid=create_grid(SCREEN_SIZE, SCREEN_SIZE);
+    
+    button_box = gtk_button_box_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_box_set_spacing(GTK_BOX(button_box), 5);
+    gtk_box_pack_start(GTK_BOX(box), grid, FALSE, FALSE, 3);
+    gtk_box_pack_start(GTK_BOX(box), button_box, FALSE, FALSE, 3);
+
+    button = gtk_button_new_with_label("A");
+    g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(press_a), NULL);
+    gtk_box_pack_start(GTK_BOX(button_box), button, FALSE, FALSE, 0);
+
+    button = gtk_button_new_with_label("B");
+    g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(press_b), NULL);
+    gtk_box_pack_start(GTK_BOX(button_box), button, FALSE, FALSE, 0);
+
+    return window;
+}
+
+
 int main(int argc, char ** argv){
     printf("Program start\n");
     if(argc < 2){ 
@@ -157,49 +194,13 @@ int main(int argc, char ** argv){
 
     if (!g_thread_supported()) g_thread_init(NULL);
     gdk_threads_init();
-
     gtk_init(&argc, &argv);
 
-    window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window), "simulator");
-    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gui_destroy), NULL);
-    gtk_container_set_border_width(GTK_CONTAINER(window), 150);
-    box = gtk_vbox_new(FALSE, 3);
-    gtk_container_add(GTK_CONTAINER(window), box);
+    GtkWidget *window = create_UI();
+    gtk_widget_show_all(window);
 
-    table = gtk_table_new(5, 5, TRUE);
-    for(int i=0; i<5; i++){
-        for(int j=0; j<5; j++){
-            button = gtk_button_new_with_label("");
-            screen[i][j] = button;
-            gtk_widget_set_sensitive(button, FALSE);
-            gtk_table_attach_defaults(GTK_TABLE(table), button, i, i+1, j, j+1);
-            gtk_widget_show(button);
-        }
-    }
-    gtk_widget_show(table);
-
-    button_box = gtk_hbutton_box_new();
-    gtk_box_set_spacing(GTK_BOX(button_box), 5);
-    gtk_box_pack_start(GTK_BOX(box), table, FALSE, FALSE, 3);
-    gtk_box_pack_start(GTK_BOX(box), button_box, FALSE, FALSE, 3);
-
-    button = gtk_button_new_with_label("A");
-    g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(press_a), NULL);
-    gtk_box_pack_start(GTK_BOX(button_box), button, FALSE, FALSE, 0);
-    gtk_widget_show(button);
-    
-    button = gtk_button_new_with_label("B");
-    g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(press_b), NULL);
-    gtk_box_pack_start(GTK_BOX(button_box), button, FALSE, FALSE, 0);
-    gtk_widget_show(button);
-
-    gtk_widget_show(button_box);
-    gtk_widget_show(box);
-    gtk_widget_show(window);
-    
     g_thread_create((GThreadFunc)gui_lisener,NULL,FALSE,NULL);
- 
+
     gdk_threads_enter();
     gtk_main();
     gdk_threads_leave();
