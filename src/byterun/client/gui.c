@@ -1,4 +1,4 @@
-#include <gtk/gtk.h>
+#include <gtk-3.0/gtk/gtk.h>
 #include <pthread.h> //pthread_t
 #include <unistd.h> //read, write
 #include <sys/stat.h> //mkfifo
@@ -15,6 +15,7 @@
 #include "../simul/shared.h"
 
 #define SCREEN_SIZE 5
+void shm_init();
 
 
 GtkWidget* window; // main window
@@ -70,6 +71,10 @@ void press_b(GtkWidget* widget, gpointer data){
 }
 
 void gui_destroy(GtkWidget* widget, gpointer data){
+    shmdt(shm1);
+	shmctl(shm1id, IPC_RMID, 0);
+    shmdt(shm2);
+	shmctl(shm2id, IPC_RMID, 0);
     gtk_main_quit();
     kill(server_pid, SIGKILL);
     kill(mypid, SIGKILL);
@@ -117,16 +122,7 @@ static gboolean delete_event(GtkWidget * widget, GdkEvent * event, gpointer data
 	return FALSE;
 }
 
-int main(int argc, char ** argv){
-    printf("Program start\n");
-    if(argc < 2){ 
-        printf("argc=%d", argc);
-        exit(0);
-    }
-    mypid = getpid();
-    server_pid = atoi(argv[1]);
-    shm1id = atoi(argv[2]);
-    shm2id = atoi(argv[3]);
+inline void shm_init(){
     void * vshm2 = shmat(shm2id, 0, 0);
     if(vshm2 < 0){
         perror("shm2id shmat failed"); exit(1);
@@ -144,11 +140,19 @@ int main(int argc, char ** argv){
     shm1->shmid = shm1id;
     shm1->written = 0;
     printf("shm1id=%d, memory attached at %p\n",shm1id, shm1);
+}
 
-    
-    printf("pid=%d\n", server_pid);
-   
-
+int main(int argc, char ** argv){
+    printf("Program start\n");
+    if(argc < 2){ 
+        printf("argc=%d", argc);
+        exit(0);
+    }
+    mypid = getpid();
+    server_pid = atoi(argv[1]);
+    shm1id = atoi(argv[2]);
+    shm2id = atoi(argv[3]);
+    shm_init();
     //---------gtk start
 
     if (!g_thread_supported()) g_thread_init(NULL);

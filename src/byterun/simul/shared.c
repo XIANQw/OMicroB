@@ -98,7 +98,7 @@ struct shared_use_st* create_shm(key_t id){
 }
 
 void free_shm(struct shared_use_st* shmdata){
-    if(shmdt(shmdata) == -1){
+  if(shmdt(shmdata) == -1){
 		perror("shmdt failed"); exit(1);
 	}
 	if(shmctl(shmdata->shmid, IPC_RMID, 0) == -1){

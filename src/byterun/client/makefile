@@ -1,11 +1,11 @@
 all: gui
 
 gui: gui.o ../.build/shared.o
-	gcc -o $@ $^ `pkg-config --cflags --libs gtk+-2.0`
+	gcc -o $@ $^ `pkg-config --cflags --libs gtk+-3.0`
 	@mv gui /tmp/
 
 gui.o: gui.c
-	gcc -c $^ `pkg-config --cflags --libs gtk+-2.0`
+	gcc -c $^ `pkg-config --cflags --libs gtk+-3.0`
 
 client: client.o
 	gcc -o $@ $^ -pthread
