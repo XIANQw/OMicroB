@@ -103,8 +103,7 @@ char msg_w[BUF_SIZE];
 bool button[2];
 bool flag_simul[1];
 int pixels[NB_PIXEL];
-bool pins_val[20];
-bool pins_mode[20];
+
 
 
 void simul_init();

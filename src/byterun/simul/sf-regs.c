@@ -93,13 +93,13 @@ void init_regs(int n, int slow){
   for(i = 0 ; i < NB_REG ; i ++) regs[i] = 0x00;
 }
 
-void destroy_regs(void){
+void destroy_regs(void) {
   destroy_sem(sem_regs);
   destroy_sem(sem_sync);
   destroy_sem(sem_done);
 }
 
-void dump_regs(void){
+void dump_regs(void) {
   int i, j;
   P(sem_regs);
   for(i = LOWER_PORT ; i <= HIGHER_PORT ; i ++){
@@ -338,8 +338,8 @@ void set_bit(uint8_t reg, uint8_t bit){
 		/* port_c, port_c, bit, port_c, ddr_val); */
       /* } */
       /* else { */
-	regs[reg] = new_val;
-	send_write_port(reg,new_val);
+    regs[reg] = new_val;
+    send_write_port(reg,new_val);
       /* } */
     }
   }
@@ -607,9 +607,15 @@ void avr_serial_write(char c){
 #include"chs_tab.h"
 
 #define BUF_SIZE 50
+#define NB_PIN 16
+
 
 pthread_mutex_t mute;
 pthread_t lisener;
+
+int pins_val[NB_PIN];
+bool pins_niveau[NB_PIN];
+bool pins_mode[NB_PIN];
 
 void *vshm1 = NULL, *vshm2=NULL;
 struct shared_use_st *shm2 = NULL, *shm1=NULL;
@@ -641,7 +647,8 @@ void* fun_lisener(void * arg){
     shm2->written=0;
     pthread_cond_signal(&shm2->cond_w); //notift client writer
     pthread_mutex_unlock(&shm2->mute);
-  }return NULL;
+  }
+  return NULL;
 }
 
 
@@ -725,7 +732,7 @@ void microbit_write_pixel(int x, int y, int l) {
     pixels[5*y+x] = l;
     v=1;
   }
-  int code = (SET_PIXEL << 25) | (x << 13) | (y << 1) | v;
+  int code = SET_PIXEL(x,y,v);
   send_msg(code);
 }
 
@@ -745,7 +752,7 @@ void microbit_print_image(char *str) {
 
 void microbit_clear_screen() {
   simul_init();
-  int code = CLEAR_SCREEN << 24;
+  int code = CLEAR_SCREEN;
   send_msg(code);
 }
 
@@ -765,26 +772,31 @@ int microbit_button_is_pressed(int b) {
 void microbit_pin_mode(int p, int m) {
   simul_init();
   pins_mode[p] = m;
-  if(m == 0) snprintf(msg_w, BUF_SIZE, "Setting PIN%d to INPUT", p);
-  else snprintf(msg_w, BUF_SIZE, "Setting PIN%d to OUTPUT", p);
-  // send_msg(msg_w);
+  int v = m==0?0:1;
+  int code = PIN_MODE(p, m);
+  send_msg(code);
 }
 
-//   inst   PIN   v  
-// 15----9 8---1  0 
+//   inst    PIN     v  
+// 31----25 24---17 16--0
 void microbit_digital_write(int p, int l) {
   simul_init();
-  pins_val[p] = l;
+  pins_niveau[p] = l;
   int v = l==0?0:1;
-  int code = (DIGITAL_WRITE << 9) | (p << 1) | v; 
+  int code = DIGITAL_WRITE(p, v); 
   send_msg(code);
+}
+
+int microbit_digital_read(int p) {
+  simul_init();
+  return pins_val[p];
 }
 
 //   inst    PIN     v  
 // 31----25 24---17 16--0
 void microbit_analog_write(int p, int l) {
   simul_init();
-  int code = (ANALOG_WRITE<<25) | (p << 17) | (l & 0b11111111111111111);
+  int code = ANALOG_WRITE(p, l);
   pins_val[p] = l;
   send_msg(code);
 }
@@ -794,10 +806,6 @@ int microbit_analog_read(int p) {
   return pins_val[p];
 }
 
-int microbit_digital_read(int p) {
-  simul_init();
-  return pins_val[p];
-}
 
 void microbit_delay(int ms) {
   simul_init();
@@ -843,12 +851,6 @@ char microbit_serial_read() {
     exit(0);
   }
   char res = buffer[read_ptr++];
-
-  /*********************************/
-  /*******for test the char corret********/
-  // print_char(getCharTab(AscC,chs_tab));
-  /*********************************/  
-
   if(read_ptr == buf_ptr){
     buf_ptr=0; read_ptr=0;
   }

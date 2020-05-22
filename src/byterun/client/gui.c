@@ -15,10 +15,15 @@
 #include "../simul/shared.h"
 
 #define SCREEN_SIZE 5
+#define NB_PIN 16
 void shm_init();
 
 GtkWidget* screen[SCREEN_SIZE][SCREEN_SIZE];
 int bval[2];
+int pins_mode[NB_PIN];
+int pins_niveau[NB_PIN]; 
+int pins_vals[NB_PIN];
+
 pid_t server_pid=0, mypid=0;
 void *vshm1 = NULL, *vshm2=NULL;
 struct shared_use_st *shm1, *shm2;
@@ -77,7 +82,7 @@ void gui_destroy(GtkWidget* widget, gpointer data){
 void* gui_lisener(void * arg){
     printf("read processus start\n");
     printf("\n---------------------notify: client can recieve msg\n");
-    int x=0, y=0, v=0;
+    int x=0, y=0, v=0, pin=0;
     while(1){           
         pthread_mutex_lock(&shm1->mute);
         // printf("client lisener lock\n");
@@ -101,6 +106,10 @@ void* gui_lisener(void * arg){
             gdk_threads_enter();
             clear_screen();
             gdk_threads_leave();
+            break;
+        case 3:
+            v = code & 0b1;
+            pin = code >> 17;
             break;
         default:
             break;
