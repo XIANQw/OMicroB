@@ -23,34 +23,12 @@ idents [a-zA-Z][a-zA-Z0-9]*
 "*" return(STAR);
 "->" return(FLECH);
 
-"CONST" return(CONST);
-"FUN" return(FUN);
-"REC" return(REC);
-
-"echo" return(ECHO);
-"ECHO" return(ECHO);
-
-"bool" return(BOOL);
-"int" return(INT);
-
-"true" return(TRUE);
-"false" return(FALSE);
-"not" return(NOT);
-"and" return(AND);
-"or" return(OR);
-
-"eq" return(EQ);
-"lt" return(LT);
-"gt" return(GT);
-"add" return(PLUS);
-"sub" return(MINUS);
-"mul" return(MULT);
-"div" return(DIV);
-
-"if" return(IF);
-
-
-
+"led" return(LED);
+"pin" return(PIN);
+"button" return(BUTTON);
+"nb_buttons" return (NBBUTTON);
+"nb_leds" return(NBLED);
+"nb_pins" return(NBPINS);
 
 {nums}    {
     yylval.num=atoi(yytext);
