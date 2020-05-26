@@ -4,7 +4,9 @@ GtkWidget* screen[SCREEN_SIZE][SCREEN_SIZE];
 GtkWidget** leds;
 int bval[2];
 int64_t pins_mode;
-int64_t pins_niveau; 
+int64_t pins_niveau;
+int leds_state=0;
+pid_t server_pid=0, mypid=0; 
 int *pins_vals;
 struct shared_use_st *shm1, *shm2;
 int shm2id, shm1id, envid;
@@ -122,7 +124,7 @@ void* gui_lisener(void * arg){
         pthread_mutex_lock(&shm1->mute);
         // printf("client lisener lock\n");
         if(shm1->written==0){ // client lisener bloc, util server writer notify. 
-            printf("cl:wait\n");    pthread_cond_wait(&shm1->cond_r, &shm1->mute);
+            pthread_cond_wait(&shm1->cond_r, &shm1->mute);
         }
         
         // printf("c:%d\n", shm1->code);
@@ -155,7 +157,6 @@ void* gui_lisener(void * arg){
             break;
         }
         shm1->written = 0;
-        printf("cl notify sw\n");
         pthread_cond_signal(&shm1->cond_w); // finish treatement, notify server writer;
         pthread_mutex_unlock(&shm1->mute);
     }//while

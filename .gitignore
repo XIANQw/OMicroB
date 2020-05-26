@@ -15,3 +15,6 @@
 .build/
 .vscode/
 config.ml
+y.tab.*
+lex.yy.*
+*.gch

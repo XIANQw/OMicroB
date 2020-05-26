@@ -715,11 +715,10 @@ void send_msg(int code){
   //pipe_write exist or not
   pthread_mutex_lock(&shm1->mute);
   if(shm1->written==1) { // server writer bloc, util client lisener notify
-    printf("sw wait\n"); pthread_cond_wait(&shm1->cond_w, &shm1->mute);
+    pthread_cond_wait(&shm1->cond_w, &shm1->mute);
   }
   shm1->code=code;
   shm1->written = 1;
-  printf("sw notify cl\n");
   pthread_cond_signal(&shm1->cond_r); // notify client lisener
   pthread_mutex_unlock(&shm1->mute);
 }
