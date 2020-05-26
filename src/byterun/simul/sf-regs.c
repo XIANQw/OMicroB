@@ -613,12 +613,13 @@ void avr_serial_write(char c){
 pthread_mutex_t mute;
 pthread_t lisener;
 
-int pins_val[NB_PIN];
-bool pins_niveau[NB_PIN];
-bool pins_mode[NB_PIN];
+int * pins_val;
+int * pins_niveau;
+int * pins_mode;
 
 void *vshm1 = NULL, *vshm2=NULL;
 struct shared_use_st *shm2 = NULL, *shm1=NULL;
+Env shm_env;
 
 
 void* fun_lisener(void * arg){
@@ -628,7 +629,6 @@ void* fun_lisener(void * arg){
     if(shm2->written==0){ // server lisener bloc, until client writer notify
       pthread_cond_wait(&shm2->cond_r, &shm2->mute);
     }
-    int code=shm2->code;
     pthread_mutex_lock(&mute);
     switch (shm2->code){
     case 1:
@@ -652,6 +652,19 @@ void* fun_lisener(void * arg){
 }
 
 
+void init_env(){
+  int nb_pin = shm_env->nb_pins_col+shm_env->nb_pins_row;
+  pins_mode = (int *)malloc(sizeof(int)*nb_pin);
+  pins_niveau = (int *)malloc(sizeof(int)*nb_pin);
+  pins_val = (int *)malloc(sizeof(int)*nb_pin);
+  memset(pins_mode, 0, nb_pin);
+  int i;
+  for(i=0; i<shm_env->nb_pins_row; i++) pins_niveau[i]=0;
+  for(; i<shm_env->nb_pins_col; i++) pins_niveau[i]=1;
+  memset(pins_val, 0, nb_pin);
+}
+
+
 void simul_init(){
   if(flag_simul[0]) return;
   flag_simul[0]=1;
@@ -660,18 +673,33 @@ void simul_init(){
   int shm1id=shm1->shmid;
   shm2 = create_shm(1230);
   int shm2id=shm2->shmid;
+  shm_env = create_env(1238);
+  int envid=shm_env->shmid;
+  char env_id_str[10];
+  snprintf(env_id_str, 10, "%d", envid);
 
   pid_t child = vfork();
   if(child < 0) exit(0);
   if(child == 0){
-    printf("child\n");
+    char *const argv[] = {"get_env", env_id_str, NULL};
+    printf("child1, envid=%d\n", envid);
+    int res = execvp("/tmp/get_env", argv);
+    printf("res1=%d", res);
+  }
+  sleep(1);
+
+  init_env();
+  child = vfork();
+  if(child < 0) exit(0);
+  if(child == 0){
+    printf("child2\n");
     char pidstr[10], shm1idstr[10], shm2idstr[10];
     snprintf(pidstr, 10, "%d", getppid());
     snprintf(shm1idstr, 10, "%d", shm1id);
     snprintf(shm2idstr, 10, "%d", shm2id);
     printf("father=%d\n", getppid());
-    char *const argv[] = {"gui", pidstr, shm1idstr, shm2idstr, NULL};
-    int res = execvp("/tmp/gui",argv);
+    char *const argv[] = {"gui", pidstr, shm1idstr, shm2idstr, env_id_str, NULL};
+    int res = execvp("/tmp/client",argv);
     printf("res=%d\n", res);
   }else{
     sleep(1);
@@ -687,10 +715,11 @@ void send_msg(int code){
   //pipe_write exist or not
   pthread_mutex_lock(&shm1->mute);
   if(shm1->written==1) { // server writer bloc, util client lisener notify
-    pthread_cond_wait(&shm1->cond_w, &shm1->mute);
+    printf("sw wait\n"); pthread_cond_wait(&shm1->cond_w, &shm1->mute);
   }
   shm1->code=code;
   shm1->written = 1;
+  printf("sw notify cl\n");
   pthread_cond_signal(&shm1->cond_r); // notify client lisener
   pthread_mutex_unlock(&shm1->mute);
 }
@@ -724,16 +753,25 @@ void microbit_print_int(int i) {
 // 31----25 24---13 12---1  0 
 void microbit_write_pixel(int x, int y, int l) {
   simul_init();
-  int v=0;
-  if(pixels[5*y+x]==l) return;
-  if(l==0){
-    pixels[5*y+x] = 0;
-  } else { 
-    pixels[5*y+x] = l;
-    v=1;
+  int ledid=5*y+x;
+  int row_pin=shm_env->leds[ledid][0], col_pin=shm_env->leds[ledid][1] + shm_env->nb_pins_row;
+  printf("x=%d, y=%d, v=%d\n", x, y, l);
+  if(l > 0){
+    microbit_digital_write(row_pin, 1);
+    microbit_digital_write(col_pin, 0);
+  } else{
+    microbit_digital_write(row_pin, 0);
+    microbit_digital_write(col_pin, 1);
   }
-  int code = SET_PIXEL(x,y,v);
-  send_msg(code);
+  // if(pixels[5*y+x]==l) return;
+  // if(l==0){
+  //   pixels[5*y+x] = 0;
+  // } else { 
+  //   pixels[5*y+x] = l;
+  //   v=1;
+  // }
+  // int code = SET_PIXEL(x,y,v);
+  // send_msg(code);
 }
 
 void microbit_print_image(char *str) {
@@ -783,8 +821,9 @@ void microbit_digital_write(int p, int l) {
   simul_init();
   pins_niveau[p] = l;
   int v = l==0?0:1;
-  int code = DIGITAL_WRITE(p, v); 
+  int code = DIGITAL_WRITE(p, v);
   send_msg(code);
+  printf("(s->c)p=%d, v=%d\n", p, v);
 }
 
 int microbit_digital_read(int p) {

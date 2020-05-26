@@ -2,10 +2,12 @@ LEX_C = flex
 YACC_C = yacc
 GCC = gcc
 
-prologTerm: parser ast.h ast.c prologTerm.c
+get_env: parser ast.h ast.c get_env.c
 	$(GCC) -c ast.c
-	$(GCC) -c prologTerm.c
-	$(GCC) -o prologTermProg ast.o prologTerm.o lex.yy.o y.tab.o -lm -ll
+	$(GCC) -c get_env.c
+	$(GCC) -o get_env ast.o get_env.o lex.yy.o y.tab.o -lm -ll
+	@cp circuit.txt /tmp/
+	@mv get_env /tmp/
 
 parser: lexer.lex parser.y
 	$(YACC_C) -d parser.y

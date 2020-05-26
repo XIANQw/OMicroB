@@ -1,18 +1,14 @@
-all: gui
+all: client
 
-gui: gui.o ../.build/shared.o
+client: gui.o gui.h ../.build/shared.o client.o client.h
 	gcc -o $@ $^ `pkg-config --cflags --libs gtk+-3.0`
-	@mv gui /tmp/
+	@mv client /tmp/
 
-gui.o: gui.c
+gui.o: gui.c gui.h
 	gcc -c $^ `pkg-config --cflags --libs gtk+-3.0`
 
-client: client.o
-	gcc -o $@ $^ -pthread
-
-
-%.o: %.c
-	gcc -o $@ -c $^
+client.o: client.c client.h
+	gcc -c $^ `pkg-config --cflags --libs gtk+-3.0`
 
 clean:
-	rm *.o gui client server
+	rm *.o client

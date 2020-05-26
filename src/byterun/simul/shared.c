@@ -71,6 +71,33 @@ void V(int sem){
   }
 }
 
+
+Env create_env(key_t id){
+  Env env;
+  int shmid = shmget(id, sizeof(struct shared_use_st), 0666|IPC_CREAT);
+  if(shmid < 0){
+    perror("shmget fail"); exit(1);
+  }
+  void * shm = shmat(shmid, 0, 0);
+  if(shm < (void *)0){
+    perror("shmat failed"); exit(1);
+  }
+  env=(Env)shm;
+  env->shmid=shmid;
+  return env;
+}
+
+void printEnv(Env shm_env){
+  printf("nbpins=(%d,%d) nbleds=%d\n", shm_env->nb_pins_row, shm_env->nb_pins_col, shm_env->nb_leds);
+  for(int i=0; i<shm_env->nb_leds; i++){
+      printf("led[%d]->(pin%d, pin%d)\n", i, shm_env->leds[i][0], shm_env->leds[i][1]);
+  }
+  printf("nb_buttons=%d\n", shm_env->nb_buttons);
+  for(int i=0; i<shm_env->nb_buttons; i++){
+      printf("button[%d]->(%s, pin%d)\n", i, shm_env->buttons[i].label, shm_env->buttons[i].pins);
+  }
+}
+
 struct shared_use_st* create_shm(key_t id){
     struct shared_use_st* shmdata;
     int shmid = shmget(id, sizeof(struct shared_use_st), 0666|IPC_CREAT);
@@ -93,15 +120,16 @@ struct shared_use_st* create_shm(key_t id){
     pthread_cond_init(&shmdata->cond_r, &shmdata->cond_atr);
     pthread_cond_init(&shmdata->cond_w, &shmdata->cond_atr);
     
-    printf("id=%d, memory attached at %X\n",shmid, shmdata);
+    printf("id=%d, memory attached at %p\n",shmid, shmdata);
     return shmdata;
 }
 
 void free_shm(struct shared_use_st* shmdata){
+  int shmid=shmdata->shmid;
   if(shmdt(shmdata) == -1){
 		perror("shmdt failed"); exit(1);
 	}
-	if(shmctl(shmdata->shmid, IPC_RMID, 0) == -1){
+	if(shmctl(shmid, IPC_RMID, 0) == -1){
 		perror("shmctl(IPC_RMID) failed"); exit(1);
 	}
 }

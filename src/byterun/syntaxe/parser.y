@@ -1,7 +1,7 @@
 %{
     #include <stdio.h>
     #include <stdlib.h>
-    #include "prologTerm.h"
+    #include "get_env.h"
 
     int yylex (void);
     int yyerror (char *);
@@ -70,9 +70,13 @@ int yyerror(char *s) {
 }
 
 int main(int argc, char **argv) {
-    freopen("circuit.txt", "r", stdin);
+    if(argc < 2){
+        printf("argc=%d", argc); exit(0);
+    }
+    int shmid = atoi(argv[1]);
+    freopen("/tmp/circuit.txt", "r", stdin);
     yyparse();
-    printProg(theProg);
+    printProg(theProg, shmid);
     printf("\n");
     return 0;
 }
