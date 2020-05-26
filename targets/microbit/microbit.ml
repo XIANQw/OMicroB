@@ -66,6 +66,8 @@ module Screen = struct
   external clear_screen: unit -> unit = "caml_microbit_clear_screen" [@@noalloc]
   external unsafe_print_image: bytes -> unit = "caml_microbit_print_image" [@@noalloc]
   external unsafe_set_pixel: int -> int -> bool -> unit = "caml_microbit_write_pixel" [@@noalloc]
+  external show: unit -> unit = "caml_microbit_show" [@@noalloc]
+  
 
   let print_newline () = ()
 

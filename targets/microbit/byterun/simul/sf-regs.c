@@ -152,6 +152,10 @@ void microbit_clear_screen() {
   send_msg(code);
 }
 
+void microbit_show(){
+  printf("show\n");
+}
+
 int microbit_button_is_pressed(int b) {
   // printf("Button is %d\n", b);
   simul_init();

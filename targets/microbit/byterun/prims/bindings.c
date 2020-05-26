@@ -42,6 +42,11 @@ value caml_microbit_clear_screen() {
   return Val_unit;
 }
 
+value caml_microbit_show(){
+  microbit_show();
+  return Val_unit;
+}
+
 value caml_microbit_button_is_pressed(value b) {
   return Val_bool(microbit_button_is_pressed(Int_val(b)));
 }

@@ -65,6 +65,7 @@ void microbit_write_pixel(int x, int y, int l);
 void microbit_print_string(char *str);
 void microbit_print_image(char *str);
 void microbit_clear_screen();
+void microbit_show();
 
 /******************************************************************************/
 

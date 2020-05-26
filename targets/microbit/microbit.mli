@@ -33,6 +33,7 @@ val millis: unit -> int
 module Screen: sig
   include Circuits.Display
   val set_pixel : int -> int -> bool -> unit
+  val show : unit -> unit
 end
 
 module Serial: sig
