@@ -27,7 +27,7 @@
 
 
 extern GtkWidget* screen[SCREEN_SIZE][SCREEN_SIZE];
-extern GtkWidget** leds;
+extern GtkWidget** leds, **pin_row, **pin_col;
 extern int bval[2];
 extern int64_t pins_mode;
 extern int64_t pins_niveau; 

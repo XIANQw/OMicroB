@@ -1,7 +1,7 @@
 #include "client.h"
 
 GtkWidget* screen[SCREEN_SIZE][SCREEN_SIZE];
-GtkWidget** leds;
+GtkWidget** pin_row, **pin_col, **leds;
 int bval[2];
 int64_t pins_mode;
 int64_t pins_niveau;
@@ -55,7 +55,7 @@ void print_Env(Env shm_env){
 void print_pins_niveau(){
     printf("pins_niveau=[");
     for(int i=0; i<shm_env->nb_pins_row+shm_env->nb_pins_col; i++){
-        printf("%d, ", READ_BIT(pins_niveau, i));
+        printf("%d ", READ_BIT(pins_niveau, i));
     }   
     printf("]\n");
 }
@@ -67,6 +67,20 @@ void modify_screen(int x, int y, int v){
     else gtk_button_set_label(GTK_BUTTON(screen[x][y]), "");
 }
 
+void modify_pin(int p, int v){
+    if(p < shm_env->nb_pins_row){
+        if(v) gtk_button_set_label(GTK_BUTTON(pin_row[p]), "1");
+        else gtk_button_set_label(GTK_BUTTON(pin_row[p]), "0");
+    }else if (p < shm_env->nb_pins_col + shm_env->nb_pins_row){
+        p -= shm_env->nb_pins_row;
+        if(v) gtk_button_set_label(GTK_BUTTON(pin_col[p]), "1");
+        else gtk_button_set_label(GTK_BUTTON(pin_col[p]), "0");
+    } else{
+        printf("%d > nb_pins()\n", p, shm_env->nb_pins_col + shm_env->nb_pins_row);
+        exit(0);
+    }
+}
+
 void clear_screen(){
     for(int i=0; i<SCREEN_SIZE; i++){
         for(int j=0; j<SCREEN_SIZE; j++){
@@ -76,17 +90,30 @@ void clear_screen(){
 }
 
 void flush_screen(){
-    printf("leds_state=[");
-    for(int i=0; i<shm_env->nb_leds; i++){
-        int row=shm_env->leds[i][0], col=shm_env->leds[i][1] + shm_env->nb_pins_row;
-        int x=i%5, y=i/5, v=READ_BIT(pins_niveau, row)-READ_BIT(pins_niveau, col);
-        if(v>0) SET_BIT(leds_state, shm_env->nb_leds-i-1);
-        else CLR_BIT(leds_state, shm_env->nb_leds-i-1);
-        printf("%d ", READ_BIT(leds_state, shm_env->nb_leds-i-1));
-        // if(v>0) printf("x=%d, y=%d\n", x, y);
-        // modify_screen(x, y, v);
+    for(int row=0; row<shm_env->nb_pins_row; row++){
+        gdk_threads_enter();
+        for(int col=shm_env->nb_pins_row; col<shm_env->nb_pins_row+shm_env->nb_pins_col; col++){
+            int etat_row = READ_BIT(pins_niveau, row), etat_col = READ_BIT(pins_niveau, col), col_id = col-shm_env->nb_pins_row;
+            int index = row*shm_env->nb_pins_col+col_id;
+            if(leds[index] == NULL) continue;
+            if(etat_row > etat_col){ 
+                // printf("allumer (%d, %d)=%p\n", row, col_id,leds[index]);
+                gtk_button_set_label(GTK_BUTTON(leds[index]), "o");
+            } else{ 
+                // printf("eteinte (%d, %d)=%p\n", row, col_id,leds[index]);                
+                gtk_button_set_label(GTK_BUTTON(leds[index]), "");
+            }
+        }
+        gdk_threads_leave();
+        // gdk_threads_enter();
+        // for(int col=shm_env->nb_pins_row; col<shm_env->nb_pins_row+shm_env->nb_pins_col; col++){
+        //     int col_id = col-shm_env->nb_pins_row;
+        //     int index = row*shm_env->nb_pins_col+col_id;
+        //     if(leds[index]==NULL) continue;
+        //     gtk_button_set_label(GTK_BUTTON(leds[index]), "");
+        // }
+        // gdk_threads_leave();
     }
-    printf("]\n");
 }
 
 void send_msg(int code){
@@ -108,11 +135,13 @@ void init_env(){
     for(i=shm_env->nb_pins_row; i<nb_pin; i++) SET_BIT(pins_niveau, i);
     print_pins_niveau();
     leds=(GtkWidget **)malloc(sizeof(GtkWidget *) * (shm_env->nb_pins_row * shm_env->nb_pins_col));
+    memset(leds, 0, sizeof(GtkWidget *) * (shm_env->nb_pins_row * shm_env->nb_pins_col));
     for(int i=0; i < shm_env->nb_leds; i++){
         int row = shm_env->leds[i][0], col = shm_env->leds[i][1];
         int index=row*shm_env->nb_pins_col + col;
         int x = i%SCREEN_SIZE, y=i/SCREEN_SIZE;
-        leds[index] = screen[y][x];
+        leds[index] = screen[x][y];
+        // printf("(%d, %d)=leds[%d]=%p, screen[%d][%d]=%p\n", row, col, index, leds[index], y, x, screen[x][y]);
     }
 }
 
@@ -148,10 +177,14 @@ void* gui_lisener(void * arg){
             v = code & 0b1;
             pin = (code >> 17) & 0b11111111;
             printf("c:p=%d, v=%d\n", pin, v);
+            gdk_threads_enter();
+            modify_pin(pin, v);
+            gdk_threads_leave();
             if(v) SET_BIT(pins_niveau, pin);
             else CLR_BIT(pins_niveau, pin);
-            flush_screen();
-            print_pins_niveau();
+            break;
+        case 6:
+            // flush_screen();
             break;
         default:
             break;
@@ -175,14 +208,13 @@ int main(int argc, char ** argv){
     shm2id = atoi(argv[3]);
     envid = atoi(argv[4]);
     shm_init();
-    init_env();
     //---------gtk start
-
     if (!g_thread_supported()) g_thread_init(NULL);
     gdk_threads_init();
     gtk_init(&argc, &argv);
-
     GtkWidget *window = create_UI();
+
+    init_env();
     gtk_widget_show_all(window);
 
     g_thread_create((GThreadFunc)gui_lisener,NULL,FALSE,NULL);

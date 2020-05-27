@@ -752,7 +752,7 @@ void microbit_print_int(int i) {
 // 31----25 24---13 12---1  0 
 void microbit_write_pixel(int x, int y, int l) {
   simul_init();
-  int ledid=5*y+x;
+  int ledid=5*y+x, v;
   int row_pin=shm_env->leds[ledid][0], col_pin=shm_env->leds[ledid][1] + shm_env->nb_pins_row;
   printf("x=%d, y=%d, v=%d\n", x, y, l);
   if(l > 0){
@@ -762,15 +762,15 @@ void microbit_write_pixel(int x, int y, int l) {
     microbit_digital_write(row_pin, 0);
     microbit_digital_write(col_pin, 1);
   }
-  // if(pixels[5*y+x]==l) return;
-  // if(l==0){
-  //   pixels[5*y+x] = 0;
-  // } else { 
-  //   pixels[5*y+x] = l;
-  //   v=1;
-  // }
-  // int code = SET_PIXEL(x,y,v);
-  // send_msg(code);
+  if(pixels[5*y+x]==l) return;
+  if(l==0){
+    pixels[5*y+x] = 0;
+  } else { 
+    pixels[5*y+x] = l;
+    v=1;
+  }
+  int code = SET_PIXEL(x,y,v);
+  send_msg(code);
 }
 
 void microbit_print_image(char *str) {
@@ -796,6 +796,7 @@ void microbit_clear_screen() {
 
 void microbit_show(){
   printf("show\n");
+  send_msg(SHOW);
 }
 
 int microbit_button_is_pressed(int b) {

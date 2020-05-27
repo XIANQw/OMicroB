@@ -47,6 +47,41 @@ GtkWidget* create_grid(int col, int row){
     return grid;
 }
 
+
+GtkWidget* create_pin_row(int height, int width){
+    GtkWidget* grid, *button;
+    grid = gtk_grid_new();
+    button = gtk_button_new_with_label("Row pins");
+    gtk_widget_set_sensitive(button, FALSE);
+    gtk_grid_attach(GTK_GRID(grid), button, 0, 0, width, 1);
+    pin_row=(GtkWidget **)malloc(sizeof(GtkWidget *) * shm_env->nb_pins_row);
+    for(int i=0; i<shm_env->nb_pins_row; i++){
+        button = gtk_button_new_with_label("0");
+        pin_row[i] = button;
+        gtk_widget_set_sensitive(button, FALSE);
+        gtk_grid_attach(GTK_GRID(grid), button, i, 1, 1, 1);
+    }
+    return grid;
+}
+
+GtkWidget* create_pin_col(int height, int width){
+    GtkWidget* grid, *button;
+    grid = gtk_grid_new();
+    button = gtk_button_new_with_label("Col pins");
+    gtk_widget_set_sensitive(button, FALSE);
+    gtk_grid_attach(GTK_GRID(grid), button, 0, 0, width, 1);
+    pin_col=(GtkWidget **)malloc(sizeof(GtkWidget *) * shm_env->nb_pins_col);
+    for(int i=0; i<shm_env->nb_pins_col; i++){
+        button = gtk_button_new_with_label("1");
+        pin_col[i] = button;
+        gtk_widget_set_sensitive(button, FALSE);
+        gtk_grid_attach(GTK_GRID(grid), button, i, 1, 1, 1);
+    }
+    return grid;
+}
+
+
+
 GtkWidget* create_UI(){
     GtkWidget *window, *button_box, *button;
 
@@ -58,10 +93,17 @@ GtkWidget* create_UI(){
     GtkWidget* box=gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
     gtk_container_add(GTK_CONTAINER(window), box);
 
-    GtkWidget* grid=create_grid(SCREEN_SIZE, SCREEN_SIZE);
+    GtkWidget* grid=create_pin_row(1, shm_env->nb_pins_row);
+    gtk_box_pack_start(GTK_BOX(box), grid, FALSE, FALSE, 3);
+    
+    grid=create_pin_col(1, shm_env->nb_pins_col);
+    gtk_box_pack_start(GTK_BOX(box), grid, FALSE, FALSE, 3);
+    
+    grid=create_grid(SCREEN_SIZE, SCREEN_SIZE);
+    gtk_box_pack_start(GTK_BOX(box), grid, FALSE, FALSE, 3);
+    
     button_box = gtk_button_box_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_box_set_spacing(GTK_BOX(button_box), 5);
-    gtk_box_pack_start(GTK_BOX(box), grid, FALSE, FALSE, 3);
     gtk_box_pack_start(GTK_BOX(box), button_box, FALSE, FALSE, 3);
 
     button = gtk_button_new_with_label("A");
