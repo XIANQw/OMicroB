@@ -20,7 +20,6 @@
 #define LOWER_PIN (HIGHER_DDR + 1)
 #define HIGHER_PIN (LOWER_PIN + NB_PORT - 1)
 
-
 #define PORTA 0
 #define PORTB 1
 #define PORTC 2
@@ -60,7 +59,6 @@
 #define PINK 34
 #define PINL 35
 
-
 #define SPSR 36
 #define SPDR 37
 
@@ -79,68 +77,85 @@ static int is_slow;
 /* On AVR : PORT = output / PIN = intput / DDR = data direction */
 /* and output = 1 / input = 0 */
 
-void init_regs(int n, int slow){
+void init_regs(int n, int slow)
+{
   int i;
-  regs = (unsigned char *) alloc_shm(NB_REG * sizeof(unsigned char));
-  analogs = (unsigned int *) alloc_shm(16 * sizeof(unsigned int));
-  sync_counter = (int *) alloc_shm(sizeof(int));
+  regs = (unsigned char *)alloc_shm(NB_REG * sizeof(unsigned char));
+  analogs = (unsigned int *)alloc_shm(16 * sizeof(unsigned int));
+  sync_counter = (int *)alloc_shm(sizeof(int));
   *sync_counter = 0;
   is_slow = slow;
   sem_regs = create_sem(1);
   sem_sync = create_sem(1);
   sem_done = create_sem(0);
   proc_nb = n;
-  for(i = 0 ; i < NB_REG ; i ++) regs[i] = 0x00;
+  for (i = 0; i < NB_REG; i++)
+    regs[i] = 0x00;
 }
 
-void destroy_regs(void) {
+void destroy_regs(void)
+{
   destroy_sem(sem_regs);
   destroy_sem(sem_sync);
   destroy_sem(sem_done);
 }
 
-void dump_regs(void) {
+void dump_regs(void)
+{
   int i, j;
   P(sem_regs);
-  for(i = LOWER_PORT ; i <= HIGHER_PORT ; i ++){
+  for (i = LOWER_PORT; i <= HIGHER_PORT; i++)
+  {
     printf("%c: 0b", 'A' + i);
-    for(j = 7 ; j >= 0 ; j --) printf("%d", (regs[i] & (1 << j)) != 0);
+    for (j = 7; j >= 0; j--)
+      printf("%d", (regs[i] & (1 << j)) != 0);
     printf("  = %3d  = 0x%02x\n", regs[i], regs[i]);
   }
   V(sem_regs);
 }
 
-static int int_of_hexchar(char c){
-  if(c >= '0' && c <= '9') return c - '0';
-  if(c >= 'A' && c <= 'F') return c - 'A' + 10;
-  if(c >= 'a' && c <= 'f') return c - 'a' + 10;
+static int int_of_hexchar(char c)
+{
+  if (c >= '0' && c <= '9')
+    return c - '0';
+  if (c >= 'A' && c <= 'F')
+    return c - 'A' + 10;
+  if (c >= 'a' && c <= 'f')
+    return c - 'a' + 10;
   return -1;
 }
 
-static char hexchar_of_int(int n){
+static char hexchar_of_int(int n)
+{
   n &= 0x0F;
-  if(n < 10) return '0' + n;
+  if (n < 10)
+    return '0' + n;
   return 'A' + n - 10;
 }
 
 /******************************/
 
-static void micro_sleep(unsigned long usec){
+static void micro_sleep(unsigned long usec)
+{
   struct timespec t;
-  t.tv_sec  = usec / 1000000;
+  t.tv_sec = usec / 1000000;
   t.tv_nsec = (1000 * usec) % 1000000000;
   nanosleep(&t, NULL);
 }
 
-static unsigned long elapsed_time(void){
-  return (unsigned long) clock() * 1000000 / CLOCKS_PER_SEC;
+static unsigned long elapsed_time(void)
+{
+  return (unsigned long)clock() * 1000000 / CLOCKS_PER_SEC;
 }
 
-static void may_sleep(){
+static void may_sleep()
+{
   static unsigned long mem_elpt = 0;
-  if(is_slow){
+  if (is_slow)
+  {
     unsigned long elpt = elapsed_time();
-    if(elpt - mem_elpt > 100){
+    if (elpt - mem_elpt > 100)
+    {
       unsigned long usec = (elpt - mem_elpt) * 4;
       micro_sleep(usec);
       mem_elpt = elapsed_time();
@@ -150,7 +165,8 @@ static void may_sleep(){
 
 /******************************/
 
-static void send_write(char cmnd, int port, unsigned char val){
+static void send_write(char cmnd, int port, unsigned char val)
+{
   char buf[5];
   buf[0] = cmnd;
   buf[1] = port + 'A';
@@ -160,35 +176,37 @@ static void send_write(char cmnd, int port, unsigned char val){
   send_all_proc(buf, 5);
 }
 
-static void send_write_port(int port, unsigned char val){
+static void send_write_port(int port, unsigned char val)
+{
   /* printf("sending write %d = %d \n", port, val); */
   send_write('W', port, val);
 }
 
-static void send_write_ddr(int ddr, unsigned char val){
+static void send_write_ddr(int ddr, unsigned char val)
+{
   send_write('T', ddr - LOWER_DDR, val);
 }
 
-
 /* static void send_config_analogs(void){ */
-  /* static unsigned int old_analog_nb = 0xFFFF; */
-  /* unsigned int analog_nb = 0; */
-  /* if((regs[ADCON0] & 1) != 0){ */
-  /*   analog_nb = 0xF - (regs[ADCON1] & 0xF); */
-  /*   if (analog_nb > 13) analog_nb = 13; */
-  /* } */
-  /* if (old_analog_nb != analog_nb) { */
-  /*   char buf[3]; */
-  /*   old_analog_nb = analog_nb; */
-  /*   buf[0] = 'C'; */
-  /*   buf[1] = hexchar_of_int(analog_nb); */
-  /*   buf[2] = '\n'; */
-  /*   send_all_proc(buf, 3); */
-  /* } */
+/* static unsigned int old_analog_nb = 0xFFFF; */
+/* unsigned int analog_nb = 0; */
+/* if((regs[ADCON0] & 1) != 0){ */
+/*   analog_nb = 0xF - (regs[ADCON1] & 0xF); */
+/*   if (analog_nb > 13) analog_nb = 13; */
+/* } */
+/* if (old_analog_nb != analog_nb) { */
+/*   char buf[3]; */
+/*   old_analog_nb = analog_nb; */
+/*   buf[0] = 'C'; */
+/*   buf[1] = hexchar_of_int(analog_nb); */
+/*   buf[2] = '\n'; */
+/*   send_all_proc(buf, 3); */
+/* } */
 /* } */
 
-static void send_set_analog(unsigned int chan, unsigned int val){
-  fprintf(stderr,"SET ANALOG %d to %d",chan,val);
+static void send_set_analog(unsigned int chan, unsigned int val)
+{
+  fprintf(stderr, "SET ANALOG %d to %d", chan, val);
   char buf[6];
   buf[0] = 'Z';
   buf[1] = hexchar_of_int(chan);
@@ -201,53 +219,66 @@ static void send_set_analog(unsigned int chan, unsigned int val){
 
 /**************/
 
-static void synchronize(){
+static void synchronize()
+{
   P(sem_sync);
   *sync_counter = proc_nb;
   V(sem_sync);
   send_all_proc("SYNC\n", 5);
-  if(proc_nb != 0) P(sem_done);
+  if (proc_nb != 0)
+    P(sem_done);
   may_sleep();
 }
 
-static int is_reg_need_synchro(uint8_t reg){
-  return
-    (reg >= LOWER_PORT && reg <= HIGHER_PORT);
+static int is_reg_need_synchro(uint8_t reg)
+{
+  return (reg >= LOWER_PORT && reg <= HIGHER_PORT);
 }
 
-static void write_register_gen(int reg, uint8_t new_val){
+static void write_register_gen(int reg, uint8_t new_val)
+{
   uint8_t old_val = regs[reg];
-  if(reg >= LOWER_PORT && reg <= HIGHER_PORT){
-    if(old_val != new_val){
+  if (reg >= LOWER_PORT && reg <= HIGHER_PORT)
+  {
+    if (old_val != new_val)
+    {
       int ddr = reg - LOWER_PORT + LOWER_DDR;
       uint8_t ddr_val = regs[ddr];
-      if(ddr_val == 0x00){
+      if (ddr_val == 0x00)
+      {
         char port_c = 'A' + reg - LOWER_PORT;
         fprintf(stderr, "Warning: the avr writes PORT%c when DDR%c=0xFF\n",
                 port_c, port_c);
-      }else{
-	regs[reg] = new_val;
-	send_write_port(reg, new_val);
+      }
+      else
+      {
+        regs[reg] = new_val;
+        send_write_port(reg, new_val);
       }
     }
   }
-  else if(reg >= LOWER_DDR && reg <= HIGHER_DDR){
-    if(old_val != new_val){
+  else if (reg >= LOWER_DDR && reg <= HIGHER_DDR)
+  {
+    if (old_val != new_val)
+    {
       send_write_ddr(reg, new_val);
       regs[reg] = new_val;
     }
   }
-  else if(reg == SPDR){
+  else if (reg == SPDR)
+  {
     regs[reg] = new_val;
-    send_write_port('G'-'A',new_val);
+    send_write_port('G' - 'A', new_val);
   }
-  else{
+  else
+  {
     regs[reg] = new_val;
   }
   may_sleep();
 }
 
-void write_register(uint8_t reg, uint8_t new_val){
+void write_register(uint8_t reg, uint8_t new_val)
+{
   /* printf("avr_write_register(%d, %d)\n", (int) reg, (int) new_val); */
   init_simulator();
   P(sem_regs);
@@ -255,11 +286,13 @@ void write_register(uint8_t reg, uint8_t new_val){
   V(sem_regs);
 }
 
-uint8_t read_register(uint8_t reg){
+uint8_t read_register(uint8_t reg)
+{
   /* printf("avr_read_register(%d)\n", (int) reg); */
   uint8_t val;
   init_simulator();
-  if (is_reg_need_synchro(reg)) synchronize();
+  if (is_reg_need_synchro(reg))
+    synchronize();
   P(sem_regs);
   val = regs[reg];
   V(sem_regs);
@@ -267,25 +300,29 @@ uint8_t read_register(uint8_t reg){
   return val;
 }
 
-bool read_bit(uint8_t reg, uint8_t bit){
-    /* printf("avr_read_bit(%d, %d)\n", (int) reg, (int) bit); */
+bool read_bit(uint8_t reg, uint8_t bit)
+{
+  /* printf("avr_read_bit(%d, %d)\n", (int) reg, (int) bit); */
   /* Dirty hack  */
-  if (reg == SPSR){
-      return 1;
+  if (reg == SPSR)
+  {
+    return 1;
   }
   uint8_t mask = 1 << bit;
   uint8_t val;
   init_simulator();
-  if (is_reg_need_synchro(reg)) synchronize();
+  if (is_reg_need_synchro(reg))
+    synchronize();
   P(sem_regs);
   /* the simulator doesnt change PINs, only PORTs ...  */
-  val = (regs[reg-LOWER_PIN] & mask) != 0;
+  val = (regs[reg - LOWER_PIN] & mask) != 0;
   V(sem_regs);
   may_sleep();
   return val;
 }
 
-void clear_bit(uint8_t reg, uint8_t bit){
+void clear_bit(uint8_t reg, uint8_t bit)
+{
   /* printf("avr_clear_bit(%d, %d)\n", (int) reg, (int) bit);  */
   init_simulator();
   P(sem_regs);
@@ -293,26 +330,36 @@ void clear_bit(uint8_t reg, uint8_t bit){
     uint8_t old_val = regs[reg];
     uint8_t mask = 1 << bit;
     uint8_t new_val = old_val & ~mask;
-    if(reg >= LOWER_PORT && reg <= HIGHER_PORT){
-      if(old_val != new_val){
+    if (reg >= LOWER_PORT && reg <= HIGHER_PORT)
+    {
+      if (old_val != new_val)
+      {
         int ddr = reg - LOWER_PORT + LOWER_DDR;
         uint8_t ddr_val = regs[ddr];
-        if(!(ddr_val & mask)){
+        if (!(ddr_val & mask))
+        {
           char port_c = 'A' + reg - LOWER_PORT;
           fprintf(stderr,
                   "Warning: the avr clears PORT%c.R%c%d when DDR%c=0x%02X\n",
                   port_c, port_c, bit, port_c, ddr_val);
-        }else{
+        }
+        else
+        {
           regs[reg] = new_val;
           send_write_port(reg, new_val);
         }
       }
-    } else if(reg >= LOWER_DDR && reg <= HIGHER_DDR){
-      if(old_val != new_val){
+    }
+    else if (reg >= LOWER_DDR && reg <= HIGHER_DDR)
+    {
+      if (old_val != new_val)
+      {
         regs[reg] = new_val;
         send_write_ddr(reg, new_val);
       }
-    }else{
+    }
+    else
+    {
       regs[reg] = new_val;
     }
   }
@@ -320,43 +367,50 @@ void clear_bit(uint8_t reg, uint8_t bit){
   may_sleep();
 }
 
-void set_bit(uint8_t reg, uint8_t bit){
+void set_bit(uint8_t reg, uint8_t bit)
+{
   /* printf("avr_set_bit(%d, %d)\n", (int) reg, (int) bit);  */
   init_simulator();
   P(sem_regs);
   uint8_t old_val = regs[reg];
   uint8_t mask = 1 << bit;
   uint8_t new_val = old_val | mask;
-  if(reg >= LOWER_PORT && reg <= HIGHER_PORT){
-    if (old_val != new_val){
+  if (reg >= LOWER_PORT && reg <= HIGHER_PORT)
+  {
+    if (old_val != new_val)
+    {
       /* int ddr = reg - LOWER_PORT + LOWER_DDR; */
       /* uint8_t ddr_val = regs[ddr]; */
       /* Forced to remove this as with INPUT_PULLUP, the PORT is also set at the beginning : */
       /* if(!(ddr_val & mask)){ */
-	/* char port_c = 'B' + reg - LOWER_PORT; */
-	/* fprintf(stderr, "Warning: the avr sets PORT%c.R%c%d when DDR%c=0x%02X\n", */
-		/* port_c, port_c, bit, port_c, ddr_val); */
+      /* char port_c = 'B' + reg - LOWER_PORT; */
+      /* fprintf(stderr, "Warning: the avr sets PORT%c.R%c%d when DDR%c=0x%02X\n", */
+      /* port_c, port_c, bit, port_c, ddr_val); */
       /* } */
       /* else { */
-    regs[reg] = new_val;
-    send_write_port(reg,new_val);
+      regs[reg] = new_val;
+      send_write_port(reg, new_val);
       /* } */
     }
   }
-  else if (reg >= LOWER_DDR && reg <= HIGHER_DDR){
-    if(old_val != new_val){
+  else if (reg >= LOWER_DDR && reg <= HIGHER_DDR)
+  {
+    if (old_val != new_val)
+    {
       regs[reg] = new_val;
-      send_write_ddr(reg,new_val);
+      send_write_ddr(reg, new_val);
     }
   }
-  else if (reg >= LOWER_PIN && reg <= HIGHER_PIN){
+  else if (reg >= LOWER_PIN && reg <= HIGHER_PIN)
+  {
     char port_c = 'A' + reg - LOWER_PIN;
     fprintf(stderr, "Warning : PIN%c is only a read register, it shouldn't be written\n",
-		port_c);
+            port_c);
   }
-  else{
-  regs[reg] = new_val;
-  /* send_write_port(reg,new_val); */ // don't send internal modifications
+  else
+  {
+    regs[reg] = new_val;
+    /* send_write_port(reg,new_val); */ // don't send internal modifications
   }
   /* printf("set bit %d on reg %d \n", bit, reg); */
   V(sem_regs);
@@ -365,19 +419,22 @@ void set_bit(uint8_t reg, uint8_t bit){
 
 /***************************************************/
 
-void delay(int ms) {
+void delay(int ms)
+{
   printf("delay(%d)\n", ms);
-  usleep((useconds_t) ms * 1000);
+  usleep((useconds_t)ms * 1000);
 }
 
-int millis() {
+int millis()
+{
   printf("millis\n");
   return 0;
 }
 
 /******************************/
 
-int pic_tris_of_port(int port_or_bit){
+int pic_tris_of_port(int port_or_bit)
+{
   /* unsigned int reg = Long_val(port_or_bit) & 0x7F; */
   /* unsigned int mask = Long_val(port_or_bit) >> 7; */
   /* may_sleep(); */
@@ -394,19 +451,22 @@ int pic_tris_of_port(int port_or_bit){
 
 /******************************/
 
-static void out_write_port(int port, unsigned char new_val){
+static void out_write_port(int port, unsigned char new_val)
+{
   P(sem_regs);
   {
     int ddr = port - LOWER_PORT + LOWER_DDR;
     int ddr_val = regs[ddr];
     int old_val = regs[port];
-    if((new_val & ~ddr_val) != 0xFF){
+    if ((new_val & ~ddr_val) != 0xFF)
+    {
       char port_c = 'A' + port - LOWER_PORT;
       fprintf(stderr,
               "Warning: an outside component writes PORT%c=0x%02X when TRIS%c=0x%02X\n",
               port_c, new_val, port_c, ddr_val);
     }
-    if(new_val != old_val){
+    if (new_val != old_val)
+    {
       regs[port] = new_val;
       send_write_port(port, new_val);
     }
@@ -415,7 +475,8 @@ static void out_write_port(int port, unsigned char new_val){
   may_sleep();
 }
 
-static void out_clear_port_bit(int port, int bit){
+static void out_clear_port_bit(int port, int bit)
+{
   P(sem_regs);
   {
     int mask = 1 << bit;
@@ -423,13 +484,15 @@ static void out_clear_port_bit(int port, int bit){
     int ddr_val = regs[ddr];
     int old_val = regs[port];
     int new_val = old_val & ~mask;
-    if(ddr_val & mask){
+    if (ddr_val & mask)
+    {
       char port_c = 'A' + port - LOWER_PORT;
       fprintf(stderr,
-        "Warning: an outside component clears PORT%c.R%c%d when TRIS%c=0x%02X\n",
+              "Warning: an outside component clears PORT%c.R%c%d when TRIS%c=0x%02X\n",
               port_c, port_c, bit, port_c, ddr_val);
     }
-    if(old_val != new_val){
+    if (old_val != new_val)
+    {
       regs[port] = new_val;
       send_write_port(port, new_val);
     }
@@ -438,7 +501,8 @@ static void out_clear_port_bit(int port, int bit){
   may_sleep();
 }
 
-static void out_set_port_bit(int port, int bit){
+static void out_set_port_bit(int port, int bit)
+{
   P(sem_regs);
   {
     int mask = 1 << bit;
@@ -446,13 +510,15 @@ static void out_set_port_bit(int port, int bit){
     int ddr_val = regs[ddr];
     int old_val = regs[port];
     int new_val = old_val | mask;
-    if(ddr_val & mask){
+    if (ddr_val & mask)
+    {
       char port_c = 'A' + port - LOWER_PORT;
       fprintf(stderr,
-        "Warning: an outside component sets PORT%c.R%c%d when DDR%c=0x%02X\n",
+              "Warning: an outside component sets PORT%c.R%c%d when DDR%c=0x%02X\n",
               port_c, port_c, bit, port_c, ddr_val);
     }
-    if(old_val != new_val){
+    if (old_val != new_val)
+    {
       regs[port] = new_val;
       send_write_port(port, new_val);
     }
@@ -461,12 +527,14 @@ static void out_set_port_bit(int port, int bit){
   may_sleep();
 }
 
-static void out_set_analog(unsigned int chan, unsigned int val){
+static void out_set_analog(unsigned int chan, unsigned int val)
+{
   P(sem_regs);
   {
-    if(val != analogs[chan]){
+    if (val != analogs[chan])
+    {
       analogs[chan] = val;
-      fprintf(stderr,"I put %d in analog %d", val, chan);
+      fprintf(stderr, "I put %d in analog %d", val, chan);
       send_set_analog(chan, val);
     }
   }
@@ -476,26 +544,35 @@ static void out_set_analog(unsigned int chan, unsigned int val){
 
 /**************/
 
-static void invalid_instr(char *instr){
+static void invalid_instr(char *instr)
+{
   fprintf(stderr, "Invalid instruction: '%s'\n", instr);
 }
 
-void exec_instr(char *instr, int size){
-  if(size < 3){
+void exec_instr(char *instr, int size)
+{
+  if (size < 3)
+  {
     invalid_instr(instr);
-  }else if((size == 4) &&
+  }
+  else if ((size == 4) &&
            (instr[0] == 'D' || instr[0] == 'd') &&
            (instr[1] == 'O' || instr[1] == 'o') &&
            (instr[2] == 'N' || instr[2] == 'n') &&
-           (instr[3] == 'E' || instr[3] == 'e')){
+           (instr[3] == 'E' || instr[3] == 'e'))
+  {
     P(sem_sync);
     *sync_counter = *sync_counter - 1;
-    if(*sync_counter == 0) V(sem_done);
+    if (*sync_counter == 0)
+      V(sem_done);
     V(sem_sync);
-  }else if(size == 5 && instr[0] == 'Z'){
+  }
+  else if (size == 5 && instr[0] == 'Z')
+  {
     int chan, h2, h1, h0, val;
     chan = int_of_hexchar(instr[1]);
-    if(chan == -1 || chan > 14){
+    if (chan == -1 || chan > 14)
+    {
       invalid_instr(instr);
       return;
     }
@@ -503,68 +580,87 @@ void exec_instr(char *instr, int size){
     h1 = int_of_hexchar(instr[3]);
     h0 = int_of_hexchar(instr[4]);
     val = 16 * 16 * h2 + 16 * h1 + h0;
-    if(h2 == -1 || h1 == -1 || h0 == -1 || val >= (1 << 10)){
+    if (h2 == -1 || h1 == -1 || h0 == -1 || val >= (1 << 10))
+    {
       invalid_instr(instr);
       return;
     }
     out_set_analog(chan, val);
-  }else{
+  }
+  else
+  {
     int port;
-    if(instr[1] >= 'A' && instr[1] <= ('A' + HIGHER_PORT - LOWER_PORT)){
+    if (instr[1] >= 'A' && instr[1] <= ('A' + HIGHER_PORT - LOWER_PORT))
+    {
       port = instr[1] - 'A' + LOWER_PORT;
-    }else if(instr[1] >= 'a' && instr[1] <= ('a' + HIGHER_PORT - LOWER_PORT)){
+    }
+    else if (instr[1] >= 'a' && instr[1] <= ('a' + HIGHER_PORT - LOWER_PORT))
+    {
       port = instr[1] - 'a' + LOWER_PORT;
-    }else{
+    }
+    else
+    {
       invalid_instr(instr);
       return;
     }
-    switch(instr[0]){
+    switch (instr[0])
+    {
     case 'W':
     case 'w':
-      if(size != 4) invalid_instr(instr);
-      else{
+      if (size != 4)
+        invalid_instr(instr);
+      else
+      {
         int h1 = int_of_hexchar(instr[2]);
         int h0 = int_of_hexchar(instr[3]);
-        if (h1 == -1 || h0 == -1) {
+        if (h1 == -1 || h0 == -1)
+        {
           invalid_instr(instr);
           return;
         }
         out_write_port(port, 16 * h1 + h0);
       }
-    break;
+      break;
     case 'C':
     case 'c':
-      if(size != 3 || instr[2] < '0' || instr[2] > '7') invalid_instr(instr);
-      else {
+      if (size != 3 || instr[2] < '0' || instr[2] > '7')
+        invalid_instr(instr);
+      else
+      {
         out_clear_port_bit(port, instr[2] - '0');
       }
-    break;
+      break;
     case 'S':
     case 's':
-      if(size != 3 || instr[2] < '0' || instr[2] > '7') invalid_instr(instr);
-      else {
+      if (size != 3 || instr[2] < '0' || instr[2] > '7')
+        invalid_instr(instr);
+      else
+      {
         out_set_port_bit(port, instr[2] - '0');
       }
-    break;
+      break;
     default:
       invalid_instr(instr);
     }
   }
 }
 int r = 0;
-int avr_random(int max){
-  r = (r*109+89)%max;
+int avr_random(int max)
+{
+  r = (r * 109 + 89) % max;
   return r;
 }
 
-void avr_adc_init(){
+void avr_adc_init()
+{
   printf("adc init\n");
   init_simulator();
 }
 
 #include <unistd.h>
 
-uint16_t avr_analog_read(uint8_t ch){
+uint16_t avr_analog_read(uint8_t ch)
+{
   /* printf("analog read (%d)\n", ch); */
   /* out_set_analog(ch,0b11111111); */
   /* usleep(50000); */
@@ -574,25 +670,28 @@ uint16_t avr_analog_read(uint8_t ch){
 
 /******************************************************************************/
 
-void avr_serial_init(){
+void avr_serial_init()
+{
   init_simulator();
   printf("serial init\n");
-  set_bit(DDRD,3);
+  set_bit(DDRD, 3);
 }
 
-char avr_serial_read(){
+char avr_serial_read()
+{
   printf("serial read\n");
-  set_bit(PORTD,2);
+  set_bit(PORTD, 2);
   usleep(10000);
-  clear_bit(PORTD,2);
+  clear_bit(PORTD, 2);
   return '0';
 }
 
-void avr_serial_write(char c){
-  printf("serial write(%c)\n",c);
-  set_bit(PORTD,3);
+void avr_serial_write(char c)
+{
+  printf("serial write(%c)\n", c);
+  set_bit(PORTD, 3);
   usleep(10000);
-  clear_bit(PORTD,3);
+  clear_bit(PORTD, 3);
 }
 /******************************************************************************/
 /******************************************************************************/
@@ -604,83 +703,94 @@ void avr_serial_write(char c){
 #include "../client/protocol.h"
 #include "shared.h"
 #include "sf-regs.h"
-#include"chs_tab.h"
+#include "chs_tab.h"
 
 #define BUF_SIZE 50
 #define NB_PIN 16
 
-
 pthread_mutex_t mute;
 pthread_t lisener;
 
-int * pins_val;
-int * pins_niveau;
-int * pins_mode;
+int *pins_val;
+int *pins_niveau;
+int *pins_mode;
 
-void *vshm1 = NULL, *vshm2=NULL;
-struct shared_use_st *shm2 = NULL, *shm1=NULL;
+void *vshm1 = NULL, *vshm2 = NULL;
+struct shared_use_st *shm2 = NULL, *shm1 = NULL;
 Env shm_env;
 
-
-void* fun_lisener(void * arg){
-  while(1){
+void *fun_lisener(void *arg)
+{
+  while (1)
+  {
     pthread_mutex_lock(&shm2->mute);
-    // printf("server lisener lock\n");  
-    if(shm2->written==0){ // server lisener bloc, until client writer notify
+    // printf("server lisener lock\n");
+    if (shm2->written == 0)
+    { // server lisener bloc, until client writer notify
       pthread_cond_wait(&shm2->cond_r, &shm2->mute);
     }
     pthread_mutex_lock(&mute);
-    switch (shm2->code){
+    switch (shm2->code)
+    {
     case 1:
-      button[0]=1; break;
+      button[0] = 1;
+      break;
     case 2:
-      button[0]=0; break;
+      button[0] = 0;
+      break;
     case 3:
-      button[1]=1; break;
+      button[1] = 1;
+      break;
     case 4:
-      button[1]=0; break;
+      button[1] = 0;
+      break;
     default:
       break;
     }
     pthread_mutex_unlock(&mute);
 
-    shm2->written=0;
+    shm2->written = 0;
     pthread_cond_signal(&shm2->cond_w); //notift client writer
     pthread_mutex_unlock(&shm2->mute);
   }
   return NULL;
 }
 
-
-void init_env(){
-  int nb_pin = shm_env->nb_pins_col+shm_env->nb_pins_row;
-  pins_mode = (int *)malloc(sizeof(int)*nb_pin);
-  pins_niveau = (int *)malloc(sizeof(int)*nb_pin);
-  pins_val = (int *)malloc(sizeof(int)*nb_pin);
+void init_env()
+{
+  int nb_pin = shm_env->nb_pins_col + shm_env->nb_pins_row;
+  pins_mode = (int *)malloc(sizeof(int) * nb_pin);
+  pins_niveau = (int *)malloc(sizeof(int) * nb_pin);
+  pins_val = (int *)malloc(sizeof(int) * nb_pin);
   memset(pins_mode, 0, nb_pin);
   int i;
-  for(i=0; i<shm_env->nb_pins_row; i++) pins_niveau[i]=0;
-  for(; i<shm_env->nb_pins_col; i++) pins_niveau[i]=1;
+  for (i = 0; i < shm_env->nb_pins_row; i++)
+    pins_niveau[i] = 0;
+  for (; i < shm_env->nb_pins_col; i++)
+    pins_niveau[i] = 1;
   memset(pins_val, 0, nb_pin);
 }
 
-
-void simul_init(){
-  if(flag_simul[0]) return;
-  flag_simul[0]=1;
+void simul_init()
+{
+  if (flag_simul[0])
+    return;
+  flag_simul[0] = 1;
 
   shm1 = create_shm(1234);
-  int shm1id=shm1->shmid;
+  int shm1id = shm1->shmid;
   shm2 = create_shm(1230);
-  int shm2id=shm2->shmid;
+  int shm2id = shm2->shmid;
   shm_env = create_env(1238);
-  int envid=shm_env->shmid;
+  int envid = shm_env->shmid;
   char env_id_str[10];
   snprintf(env_id_str, 10, "%d", envid);
 
   pid_t child = vfork();
-  if(child < 0) exit(0);
-  if(child == 0){
+  if (child < 0)
+    exit(0);
+  if (child == 0)
+  {
     char *const argv[] = {"get_env", env_id_str, NULL};
     printf("child1, envid=%d\n", envid);
     int res = execvp("/tmp/get_env", argv);
@@ -690,8 +800,10 @@ void simul_init(){
 
   init_env();
   child = vfork();
-  if(child < 0) exit(0);
-  if(child == 0){
+  if (child < 0)
+    exit(0);
+  if (child == 0)
+  {
     printf("child2\n");
     char pidstr[10], shm1idstr[10], shm2idstr[10];
     snprintf(pidstr, 10, "%d", getppid());
@@ -699,110 +811,141 @@ void simul_init(){
     snprintf(shm2idstr, 10, "%d", shm2id);
     printf("father=%d\n", getppid());
     char *const argv[] = {"gui", pidstr, shm1idstr, shm2idstr, env_id_str, NULL};
-    int res = execvp("/tmp/client",argv);
+    int res = execvp("/tmp/client", argv);
     printf("res=%d\n", res);
-  }else{
+  }
+  else
+  {
     sleep(1);
-    if (pthread_create(&lisener, NULL, fun_lisener, NULL)==-1){
-      perror("create lisener fail"); exit(1);
+    if (pthread_create(&lisener, NULL, fun_lisener, NULL) == -1)
+    {
+      perror("create lisener fail");
+      exit(1);
     }
     pthread_detach(lisener);
     pthread_mutex_init(&mute, NULL);
   }
 }
 
-void send_msg(int code){
+void send_msg(int code)
+{
   //pipe_write exist or not
   pthread_mutex_lock(&shm1->mute);
-  if(shm1->written==1) { // server writer bloc, util client lisener notify
+  if (shm1->written == 1)
+  { // server writer bloc, util client lisener notify
+    printf("s stop\n");
     pthread_cond_wait(&shm1->cond_w, &shm1->mute);
   }
-  shm1->code=code;
+  shm1->code = code;
   shm1->written = 1;
   pthread_cond_signal(&shm1->cond_r); // notify client lisener
   pthread_mutex_unlock(&shm1->mute);
 }
 
-
-void print_char(char AscC){
-  getCharTab(AscC,chs_tab);
-  for(int y = 0; y < 5; y++) {
-    for(int x = 0; x < 5; x++) {
-      if ((ch_tab[y]&(1 << x)) == (1 << x)) microbit_write_pixel(x, y, 1);
-      else microbit_write_pixel(x, y, 0);
+void print_char(char AscC)
+{
+  getCharTab(AscC, chs_tab);
+  for (int y = 0; y < 5; y++)
+  {
+    for (int x = 0; x < 5; x++)
+    {
+      if ((ch_tab[y] & (1 << x)) == (1 << x))
+        microbit_write_pixel(x, y, 1);
+      else
+        microbit_write_pixel(x, y, 0);
     }
   }
 }
 
-void microbit_print_string(char *str) {
+void microbit_print_string(char *str)
+{
   simul_init();
-  while(*str!='\0'){
+  while (*str != '\0')
+  {
     print_char(*str++);
     delay(500);
   }
 }
 
-void microbit_print_int(int i) {
+void microbit_print_int(int i)
+{
   simul_init();
   snprintf(msg_w, BUF_SIZE, "%d", i);
   microbit_print_string(msg_w);
 }
 
-//   inst      x       y    v  
-// 31----25 24---13 12---1  0 
-void microbit_write_pixel(int x, int y, int l) {
+//   inst      x       y    v
+// 31----25 24---13 12---1  0
+void microbit_write_pixel(int x, int y, int l)
+{
   simul_init();
-  int ledid=5*y+x, v;
-  int row_pin=shm_env->leds[ledid][0], col_pin=shm_env->leds[ledid][1] + shm_env->nb_pins_row;
-  printf("x=%d, y=%d, v=%d\n", x, y, l);
-  if(l > 0){
+  int ledid = 5 * y + x, v;
+  int row_pin = shm_env->leds[ledid][0], col_pin = shm_env->leds[ledid][1] + shm_env->nb_pins_row;
+  // printf("x=%d, y=%d, v=%d\n", x, y, l);
+  if (l > 0)
+  {
     microbit_digital_write(row_pin, 1);
     microbit_digital_write(col_pin, 0);
-  } else{
+  }
+  else
+  {
     microbit_digital_write(row_pin, 0);
     microbit_digital_write(col_pin, 1);
   }
-  if(pixels[5*y+x]==l) return;
-  if(l==0){
-    pixels[5*y+x] = 0;
-  } else { 
-    pixels[5*y+x] = l;
-    v=1;
+  if (pixels[5 * y + x] == l)
+    return;
+  if (l == 0)
+  {
+    pixels[5 * y + x] = 0;
+    v = 0;
   }
-  int code = SET_PIXEL(x,y,v);
+  else
+  {
+    pixels[5 * y + x] = l;
+    v = 1;
+  }
+  int code = SET_PIXEL(x, y, v);
   send_msg(code);
 }
 
-void microbit_print_image(char *str) {
+void microbit_print_image(char *str)
+{
   simul_init();
-  for(int y = 0; y < 5; y++) {
-    for(int x = 0; x < 5; x++) {
-      if (str[y*5+x]==0){ 
+  for (int y = 0; y < 5; y++)
+  {
+    for (int x = 0; x < 5; x++)
+    {
+      if (str[y * 5 + x] == 0)
+      {
         microbit_write_pixel(x, y, 0);
       }
-      else{
-        microbit_write_pixel(x, y , 1);
+      else
+      {
+        microbit_write_pixel(x, y, 1);
       }
     }
   }
 }
 
-void microbit_clear_screen() {
+void microbit_clear_screen()
+{
   simul_init();
   int code = CLEAR_SCREEN;
   send_msg(code);
 }
 
-
-void microbit_show(){
+void microbit_show()
+{
   printf("show\n");
   send_msg(SHOW);
 }
 
-int microbit_button_is_pressed(int b) {
+int microbit_button_is_pressed(int b)
+{
   // printf("Button is %d\n", b);
   simul_init();
-  if(b > 2 || b < 0){
+  if (b > 2 || b < 0)
+  {
     printf("button %d dosen't exist", b);
     return 0;
   }
@@ -812,91 +955,104 @@ int microbit_button_is_pressed(int b) {
   return res;
 }
 
-void microbit_pin_mode(int p, int m) {
+void microbit_pin_mode(int p, int m)
+{
   simul_init();
   pins_mode[p] = m;
-  int v = m==0?0:1;
+  int v = m == 0 ? 0 : 1;
   int code = PIN_MODE(p, m);
   send_msg(code);
 }
 
-//   inst    PIN     v  
+//   inst    PIN     v
 // 31----25 24---17 16--0
-void microbit_digital_write(int p, int l) {
+void microbit_digital_write(int p, int l)
+{
   simul_init();
   pins_niveau[p] = l;
-  int v = l==0?0:1;
+  int v = l == 0 ? 0 : 1;
   int code = DIGITAL_WRITE(p, v);
   send_msg(code);
   printf("(s->c)p=%d, v=%d\n", p, v);
 }
 
-int microbit_digital_read(int p) {
+int microbit_digital_read(int p)
+{
   simul_init();
   return pins_val[p];
 }
 
-//   inst    PIN     v  
+//   inst    PIN     v
 // 31----25 24---17 16--0
-void microbit_analog_write(int p, int l) {
+void microbit_analog_write(int p, int l)
+{
   simul_init();
   int code = ANALOG_WRITE(p, l);
   pins_val[p] = l;
   send_msg(code);
 }
 
-int microbit_analog_read(int p) {
+int microbit_analog_read(int p)
+{
   simul_init();
   return pins_val[p];
 }
 
-
-void microbit_delay(int ms) {
+void microbit_delay(int ms)
+{
   simul_init();
-  usleep((useconds_t) ms * 1000);
+  usleep((useconds_t)ms * 1000);
 }
 
-int microbit_millis() {
+int microbit_millis()
+{
   printf("millis()\n");
   return 0;
 }
 
 /******************************************************************************/
 
-void getCharTab(char c,char *chs_tab){   
-    memset(ch_tab,0,5*sizeof(char));
-    int offset;
-    offset = (int)c*5;            /*compute the offset by ascii code*/
-    //printf("%d",offset);
-    for(int i =0;i<5;i++){
-        ch_tab[i] = chs_tab[offset+i];
-    }
+void getCharTab(char c, char *chs_tab)
+{
+  memset(ch_tab, 0, 5 * sizeof(char));
+  int offset;
+  offset = (int)c * 5; /*compute the offset by ascii code*/
+  //printf("%d",offset);
+  for (int i = 0; i < 5; i++)
+  {
+    ch_tab[i] = chs_tab[offset + i];
+  }
 }
-
 
 /*******************************************************************************/
 
 char buffer[BUF_SIZE];
 int buf_ptr, read_ptr;
 
-void microbit_serial_write(char c) {
+void microbit_serial_write(char c)
+{
   simul_init();
-  if(buf_ptr>BUF_SIZE) {
+  if (buf_ptr > BUF_SIZE)
+  {
     perror("buffer pointer > buffer size");
     exit(0);
   }
   buffer[buf_ptr++] = c;
 }
 
-char microbit_serial_read() {
+char microbit_serial_read()
+{
   simul_init();
-  if(read_ptr == buf_ptr){
+  if (read_ptr == buf_ptr)
+  {
     perror("head pointer > buffer ptr");
     exit(0);
   }
   char res = buffer[read_ptr++];
-  if(read_ptr == buf_ptr){
-    buf_ptr=0; read_ptr=0;
+  if (read_ptr == buf_ptr)
+  {
+    buf_ptr = 0;
+    read_ptr = 0;
   }
   return res;
 }
@@ -918,11 +1074,13 @@ int microbit_compass_heading() { return 0; }
 
 void microbit_radio_init() {}
 
-void microbit_radio_send(char *s) {
+void microbit_radio_send(char *s)
+{
   printf("Sending %s by radio\n", s);
 }
 
-const char *microbit_radio_recv() {
+const char *microbit_radio_recv()
+{
   return "a";
 }
 
@@ -932,14 +1090,16 @@ void microbit_i2c_init() {}
 
 void microbit_i2c_write(int a, const char *buf, int l) {}
 
-int microbit_i2c_read(int a, char *buf) {
+int microbit_i2c_read(int a, char *buf)
+{
   return 0;
 }
 
 /*****************************************************************************/
 
 void microbit_spi_init() {}
-char microbit_spi_transmit(char c) {
+char microbit_spi_transmit(char c)
+{
   printf("Emited %d\n", c);
   return c;
 }

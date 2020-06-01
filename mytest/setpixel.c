@@ -5,7 +5,7 @@
 #define OCAML_STACK_INITIAL_WOSIZE         3
 #define OCAML_RAM_GLOBDATA_NUMBER          0
 #define OCAML_FLASH_GLOBDATA_NUMBER       26
-#define OCAML_BYTECODE_BSIZE             521
+#define OCAML_BYTECODE_BSIZE             532
 #define OCAML_PRIMITIVE_NUMBER             9
 #define OCAML_VIRTUAL_ARCH                32
 #define OCAML_STARTING_OOID                1
@@ -256,7 +256,7 @@ value env = Val_unit;
 #define OCAML_atom0                Val_flash_block(&ocaml_flash_heap[1])
 
 PROGMEM opcode_t const ocaml_bytecode[OCAML_BYTECODE_BSIZE] = {
-  /*   0 */  OCAML_BRANCH_2B, 1, 249,
+  /*   0 */  OCAML_BRANCH_2B, 2, 1,
   /*   3 */  OCAML_ACC0,
   /*   4 */  OCAML_C_CALL1, 0,
   /*   6 */  OCAML_RETURN, 1,
@@ -596,18 +596,26 @@ PROGMEM opcode_t const ocaml_bytecode[OCAML_BYTECODE_BSIZE] = {
   /* 500 */  OCAML_RETURN, 1,
   /* 502 */  OCAML_CONST0,
   /* 503 */  OCAML_RETURN, 1,
-  /* 505 */  OCAML_APPLY3,
+  /* 505 */  OCAML_CHECK_SIGNALS,
   /* 506 */  OCAML_CONST1,
-  /* 507 */  OCAML_PUSHCONST1,
+  /* 507 */  OCAML_PUSHCONST0,
   /* 508 */  OCAML_PUSHCONST0,
   /* 509 */  OCAML_PUSHGETFLASHGLOBAL_1B, 25,
   /* 511 */  OCAML_GETFIELD, 6,
   /* 513 */  OCAML_APPLY3,
-  /* 514 */  OCAML_CONST0,
-  /* 515 */  OCAML_PUSHGETFLASHGLOBAL_1B, 25,
-  /* 517 */  OCAML_GETFIELD, 7,
-  /* 519 */  OCAML_APPLY1,
-  /* 520 */  OCAML_STOP
+  /* 514 */  OCAML_CONST1,
+  /* 515 */  OCAML_PUSHCONST1,
+  /* 516 */  OCAML_PUSHCONST0,
+  /* 517 */  OCAML_PUSHGETFLASHGLOBAL_1B, 25,
+  /* 519 */  OCAML_GETFIELD, 6,
+  /* 521 */  OCAML_APPLY3,
+  /* 522 */  OCAML_CONST0,
+  /* 523 */  OCAML_PUSHGETFLASHGLOBAL_1B, 25,
+  /* 525 */  OCAML_GETFIELD, 7,
+  /* 527 */  OCAML_APPLY1,
+  /* 528 */  OCAML_CONST1,
+  /* 529 */  OCAML_BRANCHIF_1B, (opcode_t) -24,
+  /* 531 */  OCAML_STOP
 };
 
 #include </home/xian/Projets/M1-S2/PSTL/OMicroB/src/byterun/vm/runtime.c>

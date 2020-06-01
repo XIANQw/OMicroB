@@ -19,4 +19,4 @@ clean:
 	rm lex.yy.*
 	rm y.tab.*
 	rm *.o
-	rm prologTermProg
+	rm /tmp/get_env

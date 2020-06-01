@@ -90,11 +90,13 @@ void clear_screen(){
 }
 
 void flush_screen(){
+    printf("flushing...\n");
     for(int row=0; row<shm_env->nb_pins_row; row++){
         gdk_threads_enter();
         for(int col=shm_env->nb_pins_row; col<shm_env->nb_pins_row+shm_env->nb_pins_col; col++){
             int etat_row = READ_BIT(pins_niveau, row), etat_col = READ_BIT(pins_niveau, col), col_id = col-shm_env->nb_pins_row;
             int index = row*shm_env->nb_pins_col+col_id;
+            printf("index=%d, (%d, %d)=%d\n", index, row, col_id, etat_row > etat_col);
             if(leds[index] == NULL) continue;
             if(etat_row > etat_col){ 
                 // printf("allumer (%d, %d)=%p\n", row, col_id,leds[index]);
@@ -105,15 +107,16 @@ void flush_screen(){
             }
         }
         gdk_threads_leave();
-        // gdk_threads_enter();
-        // for(int col=shm_env->nb_pins_row; col<shm_env->nb_pins_row+shm_env->nb_pins_col; col++){
-        //     int col_id = col-shm_env->nb_pins_row;
-        //     int index = row*shm_env->nb_pins_col+col_id;
-        //     if(leds[index]==NULL) continue;
-        //     gtk_button_set_label(GTK_BUTTON(leds[index]), "");
-        // }
-        // gdk_threads_leave();
+        gdk_threads_enter();
+        for(int col=shm_env->nb_pins_row; col<shm_env->nb_pins_row+shm_env->nb_pins_col; col++){
+            int etat_row = READ_BIT(pins_niveau, row), etat_col = READ_BIT(pins_niveau, col), col_id = col-shm_env->nb_pins_row;
+            int index = row*shm_env->nb_pins_col+col_id;
+            if(leds[index] == NULL) continue;
+            gtk_button_set_label(GTK_BUTTON(leds[index]), "");
+        }
+        gdk_threads_leave();
     }
+    printf("flushing end...\n");
 }
 
 void send_msg(int code){
@@ -164,9 +167,10 @@ void* gui_lisener(void * arg){
             v = code & 0b1; 
             y = (code >> 1) & 0b111111111111;
             x = (code >> 13) & 0b111111111111;
-            gdk_threads_enter();
-            modify_screen(x,y,v);
-            gdk_threads_leave();
+            // printf("x=%d, y=%d, v=%d\n", x, y ,v);
+            // gdk_threads_enter();
+            // modify_screen(x,y,v);
+            // gdk_threads_leave();
             break;
         case 2:
             gdk_threads_enter();
@@ -177,11 +181,13 @@ void* gui_lisener(void * arg){
             v = code & 0b1;
             pin = (code >> 17) & 0b11111111;
             printf("c:p=%d, v=%d\n", pin, v);
+            if(v) SET_BIT(pins_niveau, pin);
+            else CLR_BIT(pins_niveau, pin);
+            print_pins_niveau();
             gdk_threads_enter();
             modify_pin(pin, v);
             gdk_threads_leave();
-            if(v) SET_BIT(pins_niveau, pin);
-            else CLR_BIT(pins_niveau, pin);
+            flush_screen();
             break;
         case 6:
             // flush_screen();
@@ -191,6 +197,7 @@ void* gui_lisener(void * arg){
         }
         shm1->written = 0;
         pthread_cond_signal(&shm1->cond_w); // finish treatement, notify server writer;
+        printf("c signal s\n");
         pthread_mutex_unlock(&shm1->mute);
     }//while
 }

@@ -70,7 +70,7 @@ void printParam(Param param){
     env->nb_leds=param->nb_leds;
 }
 
-void printEnv(){
+void printEnv(Env env){
     printf("nbpins=(%d,%d) nbleds=%d\n", env->nb_pins_row, env->nb_pins_col, env->nb_leds);
     for(int i=0; i<env->nb_leds; i++){
         printf("led[%d]->(pin%d, pin%d)\n", i, env->leds[i][0], env->leds[i][1]);
