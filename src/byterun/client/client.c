@@ -1,7 +1,7 @@
 #include "client.h"
 
-GtkWidget* screen[SCREEN_SIZE][SCREEN_SIZE];
-GtkWidget** pin_row, **pin_col, **leds;
+GtkWidget *screen[SCREEN_SIZE][SCREEN_SIZE], *window;
+GtkWidget **pin_row, **pin_col, **leds;
 int bval[2];
 int64_t pins_mode;
 int64_t pins_niveau;
@@ -167,10 +167,10 @@ void* gui_lisener(void * arg){
             v = code & 0b1; 
             y = (code >> 1) & 0b111111111111;
             x = (code >> 13) & 0b111111111111;
-            // printf("x=%d, y=%d, v=%d\n", x, y ,v);
-            // gdk_threads_enter();
-            // modify_screen(x,y,v);
-            // gdk_threads_leave();
+            printf("x=%d, y=%d, v=%d\n", x, y ,v);
+            gdk_threads_enter();
+            modify_screen(x,y,v);
+            gdk_threads_leave();
             break;
         case 2:
             gdk_threads_enter();
@@ -180,14 +180,13 @@ void* gui_lisener(void * arg){
         case 3:
             v = code & 0b1;
             pin = (code >> 17) & 0b11111111;
-            printf("c:p=%d, v=%d\n", pin, v);
+            // printf("c:p=%d, v=%d\n", pin, v);
             if(v) SET_BIT(pins_niveau, pin);
             else CLR_BIT(pins_niveau, pin);
-            print_pins_niveau();
+            // print_pins_niveau();
             gdk_threads_enter();
             modify_pin(pin, v);
             gdk_threads_leave();
-            flush_screen();
             break;
         case 6:
             // flush_screen();
@@ -219,7 +218,7 @@ int main(int argc, char ** argv){
     if (!g_thread_supported()) g_thread_init(NULL);
     gdk_threads_init();
     gtk_init(&argc, &argv);
-    GtkWidget *window = create_UI();
+    window = create_UI();
 
     init_env();
     gtk_widget_show_all(window);
