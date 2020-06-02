@@ -833,7 +833,7 @@ void send_msg(int code)
   pthread_mutex_lock(&shm1->mute);
   if (shm1->written == 1)
   { // server writer bloc, util client lisener notify
-    printf("s stop\n");
+    // printf("s stop\n");
     pthread_cond_wait(&shm1->cond_w, &shm1->mute);
   }
   shm1->code = code;
@@ -973,7 +973,7 @@ void microbit_digital_write(int p, int l)
   int v = l == 0 ? 0 : 1;
   int code = DIGITAL_WRITE(p, v);
   send_msg(code);
-  printf("(s->c)p=%d, v=%d\n", p, v);
+  // printf("(s->c)p=%d, v=%d\n", p, v);
 }
 
 int microbit_digital_read(int p)

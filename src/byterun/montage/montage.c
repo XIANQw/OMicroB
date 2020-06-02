@@ -12,7 +12,7 @@ void init_env(int shmid){
         perror("vshm shmat failed"); exit(0);
     }
     env=(Env)vshm;
-    printf("shmid=%d, memory attached at %p\n",shmid, env);
+    printf("envid=%d, memory attached at %p\n",shmid, env);
 }
 
 void add_led(int led, int pin1, int pin2){
@@ -64,17 +64,48 @@ void printCmds(Cmds cmds){
 }
 
 void printParam(Param param){
-    env->nb_pins_row=param->nb_pins_row;
-    env->nb_pins_col=param->nb_pins_col;
-    env->nb_buttons=param->nb_buttons;
-    env->nb_leds=param->nb_leds;
+    switch (param->tag)
+    {
+    case NBPINS_PAR:
+        env->nb_pins_row=param->param1;
+        env->nb_pins_col=param->param2;
+        break;
+    case NBLED_PAR:
+        env->nb_leds=param->param1;
+        break;
+    case NBBUTTON_PAR:
+        env->nb_buttons=param->param1;
+        break;
+    case SCREEN_PAR:
+        env->screen_row=param->param1;
+        env->screen_col=param->param2;
+        break;
+    default:
+        break;
+    }
+}
+
+void printParams(Params params){
+    if(!params) return ;
+    while(params->next){
+        printParam(params->head);
+        params = params->next;
+    }
+    printParam(params->head);
 }
 
 void printEnv(Env env){
+    printf("%s\n", env->name);
     printf("nbpins=(%d,%d) nbleds=%d\n", env->nb_pins_row, env->nb_pins_col, env->nb_leds);
-    for(int i=0; i<env->nb_leds; i++){
-        printf("led[%d]->(pin%d, pin%d)\n", i, env->leds[i][0], env->leds[i][1]);
+    printf("leds=[\n");
+    for(int i=0; i<env->screen_row; i++){
+        for(int j=0; j<env->screen_col; j++){
+            int index=i*env->screen_col+j;
+            printf("(p%d, p%d) ", env->leds[index][0], env->leds[index][1]);
+        }
+        printf("\n");
     }
+    printf("]\n");
     printf("nb_buttons=%d\n", env->nb_buttons);
     for(int i=0; i<env->nb_buttons; i++){
         printf("button[%d]->(%s, pin%d)\n", i, env->buttons[i].label, env->buttons[i].pins);
@@ -83,6 +114,7 @@ void printEnv(Env env){
 
 void printProg(Prog prog, int shmid){
     init_env(shmid);
-    printParam(prog->param);
+    strcpy(env->name, prog->name);
+    printParams(prog->params);
     printCmds(prog->content);
 }

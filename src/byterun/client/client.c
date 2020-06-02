@@ -159,7 +159,7 @@ void* gui_lisener(void * arg){
             v = code & 0b1; 
             y = (code >> 1) & 0b111111111111;
             x = (code >> 13) & 0b111111111111;
-            printf("x=%d, y=%d, v=%d\n", x, y ,v);
+            // printf("x=%d, y=%d, v=%d\n", x, y ,v);
             gdk_threads_enter();
             modify_screen(x,y,v);
             gdk_threads_leave();

@@ -13,6 +13,8 @@ idents [a-zA-Z][a-zA-Z0-9]*
 [ \t]  { /* On ignore */ }
 {nls}  {  }
 
+"{" return(LACO);
+"}" return(RACO);
 "(" return(LPAR);
 ")" return(RPAR);
 "[" return(LCO);
@@ -29,6 +31,7 @@ idents [a-zA-Z][a-zA-Z0-9]*
 "nb_buttons" return (NBBUTTON);
 "nb_leds" return(NBLED);
 "nb_pins" return(NBPINS);
+"screen" return(SCREEN);
 
 {nums}    {
     yylval.num=atoi(yytext);

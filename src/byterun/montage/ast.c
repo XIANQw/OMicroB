@@ -8,12 +8,18 @@ Pins appendPins(int pin_id, Pins pins){
     return res;
 }
 
-Param newParam(int nbpins_row, int nb_pins_col, int nbleds, int nbbuttons){
+Param newParam(int param1, int param2, TagParam tag){
     Param res=mallocParam;
-    res->nb_pins_row=nbpins_row;
-    res->nb_pins_col=nb_pins_col;
-    res->nb_leds=nbleds;
-    res->nb_buttons=nbbuttons;
+    res->tag=tag;
+    res->param1 = param1;
+    res->param2 = param2;
+    return res;
+}
+
+Params appendParams(Param par, Params pars){
+    Params res=mallocParams;
+    res->head=par;
+    res->next=pars;
     return res;
 }
 
@@ -43,9 +49,10 @@ Cmds appendCmds(Cmd cmd, Cmds cmds) {
 }
 
 // Prog
-Prog newProg(Param param, Cmds cmds){
+Prog newProg(char *name, Params params, Cmds cmds){
     Prog res = mallocProg;
-    res->param= param;
+    res->name=name;
+    res->params= params;
     res->content =cmds;
     return res;
 }

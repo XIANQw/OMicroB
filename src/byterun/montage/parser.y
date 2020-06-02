@@ -12,15 +12,16 @@
 %token<str>  IDENT
 
 // bloc
-%token  LPAR RPAR LCO RCO
+%token LPAR RPAR LCO RCO LACO RACO
 // symbol
-%token  NL COLON PV VRG STAR FLECH
+%token NL COLON PV VRG STAR FLECH
 %token PIN LED BUTTON
-%token NBBUTTON NBLED NBPINS
+%token NBBUTTON NBLED NBPINS SCREEN
 
 %union {
     int num;
     Param param;
+    Params params;
     char* str;
     Pins pins;
     Cmds cmds;
@@ -29,6 +30,7 @@
 }
 %type<num> pin
 %type<param> param
+%type<params> params
 %type<pins> pins
 %type<cmd> cmd
 %type<cmds> cmds
@@ -38,8 +40,15 @@
 %%
 
 param:
-NBPINS NUM VRG NBLED NUM VRG NBBUTTON NUM {$$= newParam($2, -1, $5, $8);}
-|NBPINS LPAR NUM VRG NUM RPAR VRG NBLED NUM VRG NBBUTTON NUM {$$= newParam($3, $5, $9, $12);}
+NBPINS NUM {$$= newParam($2, 0, NBPINS_PAR);}
+|NBPINS LPAR NUM VRG NUM RPAR {$$= newParam($3, $5, NBPINS_PAR);}
+|NBBUTTON NUM {$$= newParam($2, 0, NBBUTTON_PAR);}
+|NBLED NUM {$$= newParam($2, 0, NBLED_PAR); }
+|SCREEN LPAR NUM VRG NUM RPAR {$$= newParam($3, $5, SCREEN_PAR);}
+;
+params:
+param {$$= appendParams($1, NULL);}
+|param VRG params {$$= appendParams($1, $3);}
 ;
 
 pin:
@@ -51,15 +60,15 @@ pin {$$ = appendPins($1, NULL);}
 |pin VRG pins {$$ = appendPins($1, $3);}
 ;
 cmd:
-LED NUM pins {$$= newLed($2, $3);}
-|BUTTON NUM IDENT pins {$$= newButton($2, $3, $4); }
+LED NUM COLON pins {$$= newLed($2, $4);}
+|BUTTON NUM COLON IDENT pins {$$= newButton($2, $4, $5); }
 ;
 cmds:
 cmd PV{$$= appendCmds($1, NULL);}
 |cmd PV cmds {$$ = appendCmds($1, $3);}
 ;
 prog:
-param LCO cmds RCO {theProg = newProg($1,$3);}
+IDENT LACO params LCO cmds RCO RACO {theProg = newProg($1, $3, $5);}
 ;
 
 %%
@@ -77,6 +86,5 @@ int main(int argc, char **argv) {
     freopen("/tmp/circuit.txt", "r", stdin);
     yyparse();
     printProg(theProg, shmid);
-    printf("\n");
     return 0;
 }
