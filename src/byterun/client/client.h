@@ -26,7 +26,7 @@
 #define READ_BIT(reg, n) ((reg>>n) & 0b1)
 
 
-extern GtkWidget* screen[SCREEN_SIZE][SCREEN_SIZE];
+extern GtkWidget*** screen;
 extern GtkWidget** leds, **pin_row, **pin_col;
 extern int bval[2];
 extern int64_t pins_mode;

@@ -19,7 +19,7 @@ microbit{
         led 15: (4, 1), pin 0, pin 7;
         led 16: (4, 2), pin 0, pin 6;
         led 17: (4, 4), pin 0, pin 5;
-        led 18: (0, 4), pin 0, pin 4;
+        led 18: (4, 0), pin 0, pin 4;
         led 19: (1, 0), pin 0, pin 3;
         led 20: (1, 1), pin 2, pin 2;
         led 21: (1, 2), pin 1, pin 6;

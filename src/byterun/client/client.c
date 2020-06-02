@@ -1,6 +1,5 @@
 #include "client.h"
-
-GtkWidget *screen[SCREEN_SIZE][SCREEN_SIZE], *window;
+GtkWidget ***screen=NULL, *window;
 GtkWidget **pin_row, **pin_col, **leds;
 int bval[2];
 int64_t pins_mode;
@@ -44,7 +43,7 @@ inline void shm_init(){
 void print_Env(Env shm_env){
     printf("nbpins=(%d,%d) nbleds=%d\n", shm_env->nb_pins_row, shm_env->nb_pins_col, shm_env->nb_leds);
     for(int i=0; i<shm_env->nb_leds; i++){
-        printf("led[%d]->(pin%d, pin%d)\n", i, shm_env->leds[i][0], shm_env->leds[i][1]);
+        printf("led[%d]->(pin%d, pin%d)\n", i, shm_env->leds[i][2], shm_env->leds[i][3]);
     }
     printf("nb_buttons=%d\n", shm_env->nb_buttons);
     for(int i=0; i<shm_env->nb_buttons; i++){
@@ -123,17 +122,25 @@ void send_msg(int code){
 }
 
 void init_env(){
+    int row=shm_env->screen_row, col=shm_env->screen_col;
+    screen=(GtkWidget ***)malloc(sizeof(GtkWidget**)*row);
+    for(int i=0; i<row; i++){
+        screen[i]=(GtkWidget **)malloc(sizeof(GtkWidget *)*col);
+    }
     int nb_pin = shm_env->nb_pins_col+shm_env->nb_pins_row;
     pins_vals = (int *)malloc(sizeof(int)*nb_pin);
     memset(pins_vals, 0, nb_pin);
     int i;
     for(i=shm_env->nb_pins_row; i<nb_pin; i++) SET_BIT(pins_niveau, i);
     print_pins_niveau();
+}
+
+void init_leds(){
     leds=(GtkWidget **)malloc(sizeof(GtkWidget *) * (shm_env->nb_pins_row * shm_env->nb_pins_col));
     memset(leds, 0, sizeof(GtkWidget *) * (shm_env->nb_pins_row * shm_env->nb_pins_col));
     for(int i=0; i < shm_env->nb_leds; i++){
-        int row = shm_env->leds[i][0], col = shm_env->leds[i][1];
-        int index=row*shm_env->nb_pins_col + col;
+        int pin_row = shm_env->leds[i][2], pin_col = shm_env->leds[i][3];
+        int index=pin_row*shm_env->nb_pins_col + pin_col;
         int x = i%SCREEN_SIZE, y=i/SCREEN_SIZE;
         leds[index] = screen[x][y];
         // printf("(%d, %d)=leds[%d]=%p, screen[%d][%d]=%p\n", row, col, index, leds[index], y, x, screen[x][y]);
@@ -208,9 +215,11 @@ int main(int argc, char ** argv){
     if (!g_thread_supported()) g_thread_init(NULL);
     gdk_threads_init();
     gtk_init(&argc, &argv);
-    window = create_UI();
-
+    
     init_env();
+    window = create_UI();
+    init_leds();
+
     gtk_widget_show_all(window);
 
     g_thread_create((GThreadFunc)gui_lisener,NULL,FALSE,NULL);

@@ -30,19 +30,19 @@ static gboolean delete_event(GtkWidget * widget, GdkEvent * event, gpointer data
 	return FALSE;
 }
 
-GtkWidget* create_grid(int col, int row){
+GtkWidget* create_grid(int nrow, int ncol){
     GtkWidget* grid, *button;
     grid = gtk_grid_new();
     button = gtk_button_new_with_label("Screen");
     gtk_widget_set_sensitive(button, FALSE);
-    gtk_grid_attach(GTK_GRID(grid), button, 0, 0, col, 1);
-    for(int i=0; i<row; i++){
-        for(int j=0; j<col; j++){
-            button = gtk_button_new_with_label("");
-            screen[i][j] = button;
-            gtk_widget_set_sensitive(button, FALSE);
-            gtk_grid_attach(GTK_GRID(grid), button, i, 1+j, 1, 1);
-        }
+    gtk_grid_attach(GTK_GRID(grid), button, 0, 0, ncol, 1);
+    for(int i=0; i<shm_env->nb_leds; i++){
+        button=gtk_button_new_with_label("");
+        int row=shm_env->leds[i][0], col=shm_env->leds[i][1]; 
+        screen[row][col] = button;
+        printf("led%d: %d %d\n", i, row, col);
+        gtk_widget_set_sensitive(button, FALSE);
+        gtk_grid_attach(GTK_GRID(grid), button, row, col+1, 1, 1);
     }
     return grid;
 }
