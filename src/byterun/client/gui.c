@@ -40,7 +40,6 @@ GtkWidget* create_grid(int nrow, int ncol){
         button=gtk_button_new_with_label("");
         int row=shm_env->leds[i][0], col=shm_env->leds[i][1]; 
         screen[row][col] = button;
-        printf("led%d: %d %d\n", i, row, col);
         gtk_widget_set_sensitive(button, FALSE);
         gtk_grid_attach(GTK_GRID(grid), button, row, col+1, 1, 1);
     }
@@ -83,7 +82,7 @@ GtkWidget* create_pin_col(int height, int width){
 
 
 GtkWidget* create_UI(){
-    GtkWidget *window, *button_box, *button;
+    GtkWidget *window, *button_box, **buttons;
 
     window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), shm_env->name);
@@ -106,13 +105,15 @@ GtkWidget* create_UI(){
     gtk_box_set_spacing(GTK_BOX(button_box), 5);
     gtk_box_pack_start(GTK_BOX(box), button_box, FALSE, FALSE, 3);
 
-    button = gtk_button_new_with_label("A");
-    g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(press_a), NULL);
-    gtk_box_pack_start(GTK_BOX(button_box), button, FALSE, FALSE, 0);
-
-    button = gtk_button_new_with_label("B");
-    g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(press_b), NULL);
-    gtk_box_pack_start(GTK_BOX(button_box), button, FALSE, FALSE, 0);
+    buttons=(GtkWidget**)malloc(sizeof(GtkWidget*)*shm_env->nb_buttons);
+    for(int i=0; i<shm_env->nb_buttons; i++){
+        buttons[i] = gtk_button_new_with_label(shm_env->buttons[i].label);
+        gtk_box_pack_start(GTK_BOX(button_box), buttons[i], FALSE, FALSE, 0);
+    }
+    g_signal_connect(G_OBJECT(buttons[0]), "clicked", G_CALLBACK(press_a), NULL);
+    g_signal_connect(G_OBJECT(buttons[1]), "clicked", G_CALLBACK(press_b), NULL);
 
     return window;
 }
+
+
