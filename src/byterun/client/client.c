@@ -107,14 +107,6 @@ void flush_screen(){
             }
         }
         gdk_threads_leave();
-        gdk_threads_enter();
-        for(int col=shm_env->nb_pins_row; col<shm_env->nb_pins_row+shm_env->nb_pins_col; col++){
-            int etat_row = READ_BIT(pins_niveau, row), etat_col = READ_BIT(pins_niveau, col), col_id = col-shm_env->nb_pins_row;
-            int index = row*shm_env->nb_pins_col+col_id;
-            if(leds[index] == NULL) continue;
-            gtk_button_set_label(GTK_BUTTON(leds[index]), "");
-        }
-        gdk_threads_leave();
     }
     printf("flushing end...\n");
 }
@@ -180,23 +172,21 @@ void* gui_lisener(void * arg){
         case 3:
             v = code & 0b1;
             pin = (code >> 17) & 0b11111111;
-            // printf("c:p=%d, v=%d\n", pin, v);
             if(v) SET_BIT(pins_niveau, pin);
             else CLR_BIT(pins_niveau, pin);
-            // print_pins_niveau();
             gdk_threads_enter();
             modify_pin(pin, v);
             gdk_threads_leave();
             break;
         case 6:
-            // flush_screen();
+            flush_screen();
             break;
         default:
             break;
         }
         shm1->written = 0;
         pthread_cond_signal(&shm1->cond_w); // finish treatement, notify server writer;
-        printf("c signal s\n");
+        // printf("c signal s\n");
         pthread_mutex_unlock(&shm1->mute);
     }//while
 }

@@ -791,10 +791,10 @@ void simul_init()
     exit(0);
   if (child == 0)
   {
-    char *const argv[] = {"get_env", env_id_str, NULL};
+    char *const argv[] = {"montage", env_id_str, NULL};
     printf("child1, envid=%d\n", envid);
-    int res = execvp("/tmp/get_env", argv);
-    printf("res1=%d", res);
+    int res = execvp("/tmp/montage", argv);
+    printf("montage=%d\n", res);
   }
   sleep(1);
 
@@ -812,7 +812,7 @@ void simul_init()
     printf("father=%d\n", getppid());
     char *const argv[] = {"gui", pidstr, shm1idstr, shm2idstr, env_id_str, NULL};
     int res = execvp("/tmp/client", argv);
-    printf("res=%d\n", res);
+    printf("client=%d\n", res);
   }
   else
   {

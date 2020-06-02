@@ -2,12 +2,12 @@ LEX_C = flex
 YACC_C = yacc
 GCC = gcc
 
-get_env: parser ast.h ast.c get_env.c
+montage: parser ast.h ast.c montage.c
 	$(GCC) -c ast.c
-	$(GCC) -c get_env.c
-	$(GCC) -o get_env ast.o get_env.o lex.yy.o y.tab.o -lm -ll
+	$(GCC) -c montage.c
+	$(GCC) -o montage ast.o montage.o lex.yy.o y.tab.o -lm -ll
 	@cp circuit.txt /tmp/
-	@mv get_env /tmp/
+	@mv montage /tmp/
 
 parser: lexer.lex parser.y
 	$(YACC_C) -d parser.y
@@ -19,4 +19,4 @@ clean:
 	rm lex.yy.*
 	rm y.tab.*
 	rm *.o
-	rm /tmp/get_env
+	rm /tmp/montage
