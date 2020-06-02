@@ -1,6 +1,6 @@
 #include "ast.h"
 
-void add_led(int led, int pin1, int pin2);
+void add_led(int led, int row, int col, int pin1, int pin2);
 void add_button(int id, char *label, int pin);
 
 

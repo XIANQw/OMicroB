@@ -86,7 +86,7 @@ GtkWidget* create_UI(){
     GtkWidget *window, *button_box, *button;
 
     window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window), "simulator");
+    gtk_window_set_title(GTK_WINDOW(window), shm_env->name);
     g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gui_destroy), NULL);
     gtk_container_set_border_width(GTK_CONTAINER(window), 50);
     
@@ -99,7 +99,7 @@ GtkWidget* create_UI(){
     grid=create_pin_col(1, shm_env->nb_pins_col);
     gtk_box_pack_start(GTK_BOX(box), grid, FALSE, FALSE, 3);
     
-    grid=create_grid(SCREEN_SIZE, SCREEN_SIZE);
+    grid=create_grid(shm_env->screen_row, shm_env->screen_col);
     gtk_box_pack_start(GTK_BOX(box), grid, FALSE, FALSE, 3);
     
     button_box = gtk_button_box_new(GTK_ORIENTATION_HORIZONTAL);

@@ -29,7 +29,7 @@ struct _env{
     int nb_leds;
     int screen_row;
     int screen_col;
-    int leds[LED_MAX][2];
+    int leds[LED_MAX][4];
     struct {
         char label[LABEL_MAX];
         int pins;

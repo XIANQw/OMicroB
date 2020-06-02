@@ -15,12 +15,14 @@ void init_env(int shmid){
     printf("envid=%d, memory attached at %p\n",shmid, env);
 }
 
-void add_led(int led, int pin1, int pin2){
+void add_led(int led, int row, int col, int pin1, int pin2){
     if(led>LED_MAX){
         printf("led %d > max %d", led, LED_MAX); exit(0);
     }
-    env->leds[led][0]=pin1;
-    env->leds[led][1]=pin2;
+    env->leds[led][0]=row;
+    env->leds[led][1]=col;
+    env->leds[led][2]=pin1;
+    env->leds[led][3]=pin2;
 }
 
 void add_button(int id, char *label, int pin){
@@ -33,24 +35,18 @@ void add_button(int id, char *label, int pin){
 
 
 void printCmd(Cmd cmd) {
-    int pin1=-1, pin2=-1;
+    int pin1=-1, pin2=-1, row=-1, col=-1;
     switch(cmd->tag) {
-        case T_LED: 
-            if(cmd->content._led.pins) {
-                pin1=cmd->content._led.pins->pin;
-                if(cmd->content._led.pins->next) pin2=cmd->content._led.pins->next->pin;
-            }
-            add_led(cmd->content._led.id, pin1, pin2);
+        case T_LED:
+            row=cmd->content._led.row;
+            col=cmd->content._led.col;
+            pin1=cmd->content._led.pin_row;
+            pin2=cmd->content._led.pin_col;
+            add_led(cmd->content._led.id, row, col, pin1, pin2);
             break;
         case T_BUTTON: 
-            add_button(cmd->content._button.id, cmd->content._button.label, cmd->content._button.pins->pin);
+            add_button(cmd->content._button.id, cmd->content._button.label, cmd->content._button.pin);
         break;
-    }
-}
-
-void printPins(Pins pins){
-    while(pins->next){
-        pins=pins->next;
     }
 }
 
@@ -101,7 +97,7 @@ void printEnv(Env env){
     for(int i=0; i<env->screen_row; i++){
         for(int j=0; j<env->screen_col; j++){
             int index=i*env->screen_col+j;
-            printf("(p%d, p%d) ", env->leds[index][0], env->leds[index][1]);
+            printf("(row%d, col%d, p%d,p%d) ", env->leds[index][0], env->leds[index][1], env->leds[index][2], env->leds[index][3]);
         }
         printf("\n");
     }

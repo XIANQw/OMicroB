@@ -7,7 +7,7 @@ montage: parser ast.h ast.c montage.c
 	$(GCC) -c montage.c
 	$(GCC) -o montage ast.o montage.o lex.yy.o y.tab.o -lm -ll
 	@cp circuit.txt /tmp/
-	@mv montage /tmp/
+	# @mv montage /tmp/
 
 parser: lexer.lex parser.y
 	$(YACC_C) -d parser.y

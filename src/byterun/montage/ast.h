@@ -38,12 +38,15 @@ struct _cmd{
     union{
         struct{
             int id;
-            Pins pins;
+            int row;
+            int col;
+            int pin_row;
+            int pin_col;
         }_led;
         struct{
             int id;
             char *label;
-            Pins pins;
+            int pin;
         }_button;
     }content;
 };
@@ -65,8 +68,8 @@ Params appendParams(Param param, Params params);
 //Pins
 Pins appendPins(int pin_id, Pins pins);
 // Cmds
-Cmd newLed(int id, Pins pins);
-Cmd newButton(int id, char *label, Pins pins);
+Cmd newLed(int id, int row, int col, int pin_row, int pin_col);
+Cmd newButton(int id, char *label, int pin);
 Cmds appendCmds(Cmd cmd, Cmds cmds);
 // Prog
 Prog newProg(char *name, Params params, Cmds cmds);

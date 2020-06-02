@@ -1,36 +1,31 @@
 microbit{
     nb_pins(3,9), nb_leds 25, nb_buttons 2, screen(5, 5)
     [
-        led 0: pin 0, pin 0;
-        led 1: pin 1, pin 3;
-        led 2: pin 0, pin 1;
-        led 3: pin 1, pin 4;
-        led 4: pin 0, pin 2;
-        
-        led 5: pin 2, pin 3;
-        led 6: pin 2, pin 4;
-        led 7: pin 2, pin 5;
-        led 8: pin 2, pin 6;
-        led 9: pin 2, pin 7;
-        
-        led 10: pin 1, pin 1;
-        led 11: pin 0, pin 8;
-        led 12: pin 1, pin 2;
-        led 13: pin 2, pin 8;
-        led 14: pin 1, pin 0;
-        
-        led 15: pin 0, pin 7;
-        led 16: pin 0, pin 6;
-        led 17: pin 0, pin 5;
-        led 18: pin 0, pin 4;
-        led 19: pin 0, pin 3;
-        
-        led 20: pin 2, pin 2;
-        led 21: pin 1, pin 6;
-        led 22: pin 2, pin 0;
-        led 23: pin 1, pin 5;
-        led 24: pin 2, pin 1;
-        
+        led 0: (0, 0), pin 0, pin 0;
+        led 1: (0, 2), pin 0, pin 1;
+        led 2: (0, 4), pin 1, pin 3;
+        led 3: (3, 4), pin 1, pin 4;
+        led 4: (3, 3), pin 0, pin 2;
+        led 5: (3, 2), pin 2, pin 3;
+        led 6: (3, 1), pin 2, pin 4;
+        led 7: (3, 0), pin 2, pin 5;
+        led 8: (2, 1), pin 2, pin 6;
+        led 9: (2, 4), pin 2, pin 7;
+        led 10: (2, 0), pin 1, pin 1;
+        led 11: (2, 2), pin 0, pin 8;
+        led 12: (0, 1), pin 1, pin 2;
+        led 13: (0, 3), pin 2, pin 8;
+        led 14: (4, 3), pin 1, pin 0;
+        led 15: (4, 1), pin 0, pin 7;
+        led 16: (4, 2), pin 0, pin 6;
+        led 17: (4, 4), pin 0, pin 5;
+        led 18: (0, 4), pin 0, pin 4;
+        led 19: (1, 0), pin 0, pin 3;
+        led 20: (1, 1), pin 2, pin 2;
+        led 21: (1, 2), pin 1, pin 6;
+        led 22: (1, 3), pin 2, pin 0;
+        led 23: (1, 4), pin 1, pin 5;
+        led 24: (2, 3), pin 2, pin 1;
         button 0: A pin 0;
         button 1: B pin 1;
     ]

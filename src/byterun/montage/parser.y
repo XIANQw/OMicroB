@@ -28,10 +28,8 @@
     Cmd cmd;
     Prog prog;
 }
-%type<num> pin
 %type<param> param
 %type<params> params
-%type<pins> pins
 %type<cmd> cmd
 %type<cmds> cmds
 %type<prog> prog
@@ -51,17 +49,9 @@ param {$$= appendParams($1, NULL);}
 |param VRG params {$$= appendParams($1, $3);}
 ;
 
-pin:
-PIN NUM {$$ = $2;}
-;
-
-pins:
-pin {$$ = appendPins($1, NULL);}
-|pin VRG pins {$$ = appendPins($1, $3);}
-;
 cmd:
-LED NUM COLON pins {$$= newLed($2, $4);}
-|BUTTON NUM COLON IDENT pins {$$= newButton($2, $4, $5); }
+LED NUM COLON LPAR NUM VRG NUM RPAR VRG PIN NUM VRG PIN NUM {$$= newLed($2, $5, $7, $11, $14);}
+|BUTTON NUM COLON IDENT PIN NUM {$$= newButton($2, $4, $6); }
 ;
 cmds:
 cmd PV{$$= appendCmds($1, NULL);}
