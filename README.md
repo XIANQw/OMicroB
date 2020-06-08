@@ -1,13 +1,25 @@
 ## Compilation
+Environnement besion:GTK3.0
 1. Client\
-GUI se trouve dans le dossier ./src/byterun/client, vous pouvez utiliser `make` pour compiler le programme de client. Par contre le fichier exécutable `gui` est bougé au dossier `/tmp/`. Dans le fonction `simul_init` (se trouve dans `./src/byterun/simul/sf-regs.c`), le processus fils exécute `/tmp/gui` pour exécuter le client.
+GUI se trouve dans le dossier ./src/byterun/client, vous pouvez utiliser `make` pour compiler le programme de client. 
 ```
-  cd ./src/byterun/simul/client
+  cd ./src/byterun/client
   make
 ```
-2. Server\
-Compiler `./mytest/test.ml/` par `make` et exécuter `test.elf`
+2. Montage\
+Les fichier de montage se trouve dans ./src/byterun/montage,vous pouvez utiliser `make` pour compiler le programme de client.
+```
+  cd ./src/byterun/montage/
+  make
+```
 
+3. Server\
+Compiler `./mytest/test.ml/` par `make` et exécuter `test.elf`
+```
+  cd ./mytest
+  make
+  ./test.elf
+```
 
 ## Processus du projet
 On a changé la mécanisme de synchronization dans la version actuelle. On a utilisé shared memory(`shmget, shmat, shmdt, shmctl`) pour IPC (communication entre processus) ainsi que la condition variable (`pthread_cond_t`) et le mutex (`pthread_mutex_t`) pour protéger les données partagées.
